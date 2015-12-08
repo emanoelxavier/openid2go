@@ -21,10 +21,6 @@ type httpConfigurationProvider struct {
 }
 
 func (httpProv httpConfigurationProvider) getConfiguration(issuer string) (*configuration, error) {
-	// Workaround for google OP
-	if issuer == "accounts.google.com" {
-		issuer = "https://" + issuer
-	}
 	configurationUri := issuer + wellKnownOpenIdConfiguration
 
 	config := new(configuration)
