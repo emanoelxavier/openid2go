@@ -6,10 +6,11 @@ import (
 	"testing"
 )
 
+// Data used for negative tests of GetIdTokenAuthorizationHeader.
 var badHeaders = []struct {
-	header     string
-	errorCode  ValidationErrorCode
-	httpStatus int
+	header     string              // The wrong header.
+	errorCode  ValidationErrorCode // The expected error code.
+	httpStatus int                 // The expected http status code.
 }{
 	{"", ValidationErrorAuthorizationHeaderNotFound, http.StatusBadRequest},
 	{"token", ValidationErrorAuthorizationHeaderWrongFormat, http.StatusBadRequest},
@@ -19,44 +20,51 @@ var badHeaders = []struct {
 	{"Bearer token token", ValidationErrorAuthorizationHeaderWrongFormat, http.StatusBadRequest},
 }
 
-func createRequest(ah string) http.Request {
+// createRequest creates a request with the given string(headerContent) as the
+// http Authorization header and returns that request.
+func createRequest(headerContent string) http.Request {
 	r := http.Request{}
 	r.Header = http.Header(map[string][]string{})
-	r.Header.Set("Authorization", ah)
+	r.Header.Set("Authorization", headerContent)
 	return r
 }
 
-func expectError(t *testing.T, e error, h string, c ValidationErrorCode, s int) {
+// expectError validates whether the provided error(e) has
+// an error code(c)
+func expectError(t *testing.T, e error, headerContent string, errorCode ValidationErrorCode, httpStatus int) {
 	if ve, ok := e.(*ValidationError); ok {
-		if ve.Code != c {
-			t.Errorf("For header %v. Expected error code %v, got %v", h, c, ve.Code)
+		if ve.Code != errorCode {
+			t.Errorf("For header %v. Expected error code %v, got %v", headerContent, errorCode, ve.Code)
 		}
-		if ve.HTTPStatus != s {
-			t.Errorf("For header %v. Expected http status %v, got %v", h, s, ve.HTTPStatus)
+		if ve.HTTPStatus != httpStatus {
+			t.Errorf("For header %v. Expected http status %v, got %v", headerContent, httpStatus, ve.HTTPStatus)
 		}
 	} else {
-		t.Errorf("For header %v. Expected error type 'ValidationError', got %T", h, e)
+		t.Errorf("For header %v. Expected error type 'ValidationError', got %T", headerContent, e)
 	}
 }
 
-func Test_GetIdTokenAuthorizationHeader_WrongHeaderContent(t *testing.T) {
+// Tests getIdTokenAuthorizationHeader providing an Authorization header with unexpected content.
+func Test_getIdTokenAuthorizationHeader_WrongHeaderContent(t *testing.T) {
 	for _, tt := range badHeaders {
 
-		_, err := GetIdTokenAuthorizationHeader(createRequest(tt.header))
+		_, err := getIdTokenAuthorizationHeader(createRequest(tt.header))
 		expectError(t, err, tt.header, tt.errorCode, tt.httpStatus)
 	}
 }
 
-func Test_GetIdTokenAuthorizationHeader_NoHeader(t *testing.T) {
-	_, err := GetIdTokenAuthorizationHeader(http.Request{})
+// Tests getIdTokenAuthorizationHeader providing a request without Authorization header.
+func Test_getIdTokenAuthorizationHeader_NoHeader(t *testing.T) {
+	_, err := getIdTokenAuthorizationHeader(http.Request{})
 
 	expectError(t, err, "No Authorization Header", ValidationErrorAuthorizationHeaderNotFound, http.StatusBadRequest)
 }
 
-func Test_GetIdTokenAuthorizationHeader_CorrectHeaderContent(t *testing.T) {
+// Tests getIdTokenAuthorizationHeader providing an Authorization header with expected format.
+func Test_getIdTokenAuthorizationHeader_CorrectHeaderContent(t *testing.T) {
 	et := "token"
 	hc := fmt.Sprintf("Bearer %v", et)
-	rt, err := GetIdTokenAuthorizationHeader(createRequest(hc))
+	rt, err := getIdTokenAuthorizationHeader(createRequest(hc))
 
 	if err != nil {
 		t.Errorf("The header content %v is valid. Unexpected error", hc)
