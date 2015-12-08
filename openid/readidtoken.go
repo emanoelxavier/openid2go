@@ -8,7 +8,7 @@ import (
 
 // GetIdTokenFunc represents the function used to provide the OIDC idToken.
 // It uses the provided request(r) to return the id token string(token).
-// If the token was not found or had a bad format this function should return an error.
+// If the token was not found or had a bad format this function will return an error.
 type GetIdTokenFunc func(r http.Request) (token string, err error)
 
 // GetIdTokenAuthorizationHeader is the default implementation of the GetIdTokenFunc
