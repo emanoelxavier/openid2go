@@ -3,7 +3,7 @@ Go OpenId
 
 ## Summary
 
-A Go package that performs OpenId idtoken validation in order to help you integrated OpenId based authentication to your service API.
+A Go package that performs OpenId idtoken validation in order to help you integrate OpenId based authentication to your service API.
 
 ## State
 
