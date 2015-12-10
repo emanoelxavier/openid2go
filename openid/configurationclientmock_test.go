@@ -34,7 +34,7 @@ type decodeResponseCall struct {
 }
 
 type decodeResponseResp struct {
-	value interface{}
+	value *configuration
 	err   error
 }
 
@@ -55,7 +55,15 @@ func (c *ConfigurationClientMock) assertHttpGet(url string, resp *http.Response,
 func (c *ConfigurationClientMock) decodeResponse(reader io.Reader, value interface{}) error {
 	c.Calls <- &decodeResponseCall{reader}
 	dr := (<-c.Calls).(*decodeResponseResp)
-	value = dr.value
+	if config, ok := value.(*configuration); ok {
+		if dr.value != nil {
+			config.Issuer = dr.value.Issuer
+			config.JwksUri = dr.value.JwksUri
+		}
+	} else {
+		c.t.Fatalf("Expected value type '*configuration', but was %T", value)
+	}
+
 	return dr.err
 }
 
