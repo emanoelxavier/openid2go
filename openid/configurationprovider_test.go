@@ -1,59 +1,21 @@
 package openid
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"testing"
 )
 
-type Call interface{}
-
-const anything = "anything"
-
-type FakeConfigurationClient struct {
-	t     *testing.T
-	Calls chan Call
+type testBody struct {
+	io.Reader
 }
 
-func NewFakeConfigurationClient(t *testing.T) *FakeConfigurationClient {
-	return &FakeConfigurationClient{t, make(chan Call)}
-}
-
-type httpGetCall struct {
-	url string
-}
-
-type httpGetResp struct {
-	resp *http.Response
-	err  error
-}
-
-func (c *FakeConfigurationClient) httpGet(url string) (*http.Response, error) {
-	c.Calls <- &httpGetCall{url}
-	gr := (<-c.Calls).(*httpGetResp)
-	return gr.resp, gr.err
-}
-
-func (c *FakeConfigurationClient) assertHttpGet(url string, resp *http.Response, err error) {
-	call := (<-c.Calls).(*httpGetCall)
-	if url != anything && call.url != url {
-		c.t.Error("Expected httpGet with", url, "but was", call.url)
-	}
-	c.Calls <- &httpGetResp{resp, err}
-}
-
-func (c *FakeConfigurationClient) close() {
-	close(c.Calls)
-}
-
-func (c *FakeConfigurationClient) assertDone() {
-	if _, more := <-c.Calls; more {
-		c.t.Fatal("Did not expect more calls.")
-	}
-}
+func (testBody) Close() error { return nil }
 
 func Test_getConfiguration_UsesCorrectUrl(t *testing.T) {
-	c := NewFakeConfigurationClient(t)
+	c := NewConfigurationClientMock(t)
 	configurationProvider := httpConfigurationProvider{configurationGetter: c.httpGet}
 
 	issuer := "https://test"
@@ -73,7 +35,7 @@ func Test_getConfiguration_UsesCorrectUrl(t *testing.T) {
 }
 
 func Test_getConfiguration_WhenGetReturnsError(t *testing.T) {
-	c := NewFakeConfigurationClient(t)
+	c := NewConfigurationClientMock(t)
 	configurationProvider := httpConfigurationProvider{configurationGetter: c.httpGet}
 
 	readError := errors.New("Read configuration error")
@@ -108,35 +70,26 @@ func Test_getConfiguration_WhenGetReturnsError(t *testing.T) {
 }
 
 func Test_getConfiguration_WhenGetSucceeds(t *testing.T) {
-	c := NewFakeConfigurationClient(t)
-	configurationProvider := httpConfigurationProvider{configurationGetter: c.httpGet}
+	c := NewConfigurationClientMock(t)
+	configurationProvider := httpConfigurationProvider{c.httpGet, c.decodeResponse}
 
-	readError := errors.New("Read configuration error")
+	respBody := "openid configuration"
+	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
+
 	go func() {
-		c.assertHttpGet(anything, nil, readError)
+		c.assertHttpGet(anything, resp, nil)
+		c.assertDecodeResponse(respBody, nil, nil)
 		c.close()
 	}()
 
-	_, e := configurationProvider.getConfiguration("issuer")
+	config, e := configurationProvider.getConfiguration(anything)
 
-	if e == nil {
-		t.Error("An error was expected but not returned")
+	if e != nil {
+		t.Error("An error was returned but not expected", e)
 	}
 
-	if ve, ok := e.(*ValidationError); ok {
-		ee := ValidationErrorGetOpenIdConfigurationFailure
-		es := http.StatusUnauthorized
-		if ve.Code != ee {
-			t.Error("Expected error code", ee, "but was", ve.Code)
-		}
-		if ve.HTTPStatus != es {
-			t.Error("Expected HTTP status", es, "but was", ve.HTTPStatus)
-		}
-		if ve.Err.Error() != readError.Error() {
-			t.Error("Expected inner error", readError.Error(), ",but was", ve.Err.Error())
-		}
-	} else {
-		t.Errorf("Expected error type '*ValidationError' but was %T", e)
+	if config != nil {
+		t.Error("The returned configuration should have been null, but was:", c)
 	}
 
 	c.assertDone()

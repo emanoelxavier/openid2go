@@ -9,7 +9,7 @@ import (
 const wellKnownOpenIdConfiguration = "/.well-known/openid-configuration"
 
 type httpGetFunc func(url string) (*http.Response, error)
-type jsonDecodeFunc func(io.Reader, interface{}) error
+type decodeResponseFunc func(io.Reader, interface{}) error
 
 type configurationProvider interface {
 	getConfiguration(string) (*configuration, error)
@@ -17,13 +17,13 @@ type configurationProvider interface {
 
 type httpConfigurationProvider struct {
 	configurationGetter  httpGetFunc
-	configurationDecoder jsonDecodeFunc
+	configurationDecoder decodeResponseFunc
 }
 
 func (httpProv httpConfigurationProvider) getConfiguration(issuer string) (*configuration, error) {
 	configurationUri := issuer + wellKnownOpenIdConfiguration
 
-	config := new(configuration)
+	var config *configuration
 	resp, err := httpProv.configurationGetter(configurationUri) //http.Get(configurationUri)
 
 	if err != nil {
