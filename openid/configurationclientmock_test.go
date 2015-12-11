@@ -5,19 +5,21 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/square/go-jose"
 )
 
 type Call interface{}
 
 const anything = "anything"
 
-type ConfigurationClientMock struct {
+type HTTPClientMock struct {
 	t     *testing.T
 	Calls chan Call
 }
 
-func NewConfigurationClientMock(t *testing.T) *ConfigurationClientMock {
-	return &ConfigurationClientMock{t, make(chan Call)}
+func NewHTTPClientMock(t *testing.T) *HTTPClientMock {
+	return &HTTPClientMock{t, make(chan Call)}
 }
 
 type httpGetCall struct {
@@ -34,17 +36,17 @@ type decodeResponseCall struct {
 }
 
 type decodeResponseResp struct {
-	value *configuration
+	value interface{}
 	err   error
 }
 
-func (c *ConfigurationClientMock) httpGet(url string) (*http.Response, error) {
+func (c *HTTPClientMock) httpGet(url string) (*http.Response, error) {
 	c.Calls <- &httpGetCall{url}
 	gr := (<-c.Calls).(*httpGetResp)
 	return gr.resp, gr.err
 }
 
-func (c *ConfigurationClientMock) assertHttpGet(url string, resp *http.Response, err error) {
+func (c *HTTPClientMock) assertHttpGet(url string, resp *http.Response, err error) {
 	call := (<-c.Calls).(*httpGetCall)
 	if url != anything && call.url != url {
 		c.t.Error("Expected httpGet with", url, "but was", call.url)
@@ -52,22 +54,29 @@ func (c *ConfigurationClientMock) assertHttpGet(url string, resp *http.Response,
 	c.Calls <- &httpGetResp{resp, err}
 }
 
-func (c *ConfigurationClientMock) decodeResponse(reader io.Reader, value interface{}) error {
+func (c *HTTPClientMock) decodeResponse(reader io.Reader, value interface{}) error {
 	c.Calls <- &decodeResponseCall{reader}
 	dr := (<-c.Calls).(*decodeResponseResp)
-	if config, ok := value.(*configuration); ok {
+	switch v := value.(type) {
+	case *configuration:
 		if dr.value != nil {
-			config.Issuer = dr.value.Issuer
-			config.JwksUri = dr.value.JwksUri
+			v.Issuer = dr.value.(*configuration).Issuer
+			v.JwksUri = dr.value.(*configuration).JwksUri
 		}
-	} else {
+	case *jose.JsonWebKeySet:
+		if dr.value != nil {
+			v.Keys = dr.value.(*jose.JsonWebKeySet).Keys
+		}
+
+	default:
 		c.t.Fatalf("Expected value type '*configuration', but was %T", value)
+
 	}
 
 	return dr.err
 }
 
-func (c *ConfigurationClientMock) assertDecodeResponse(response string, config *configuration, err error) {
+func (c *HTTPClientMock) assertDecodeResponse(response string, value interface{}, err error) {
 	call := (<-c.Calls).(*decodeResponseCall)
 	if response != anything {
 		b, e := ioutil.ReadAll(call.reader)
@@ -81,14 +90,14 @@ func (c *ConfigurationClientMock) assertDecodeResponse(response string, config *
 		}
 	}
 
-	c.Calls <- &decodeResponseResp{config, err}
+	c.Calls <- &decodeResponseResp{value, err}
 }
 
-func (c *ConfigurationClientMock) close() {
+func (c *HTTPClientMock) close() {
 	close(c.Calls)
 }
 
-func (c *ConfigurationClientMock) assertDone() {
+func (c *HTTPClientMock) assertDone() {
 	if _, more := <-c.Calls; more {
 		c.t.Fatal("Did not expect more calls.")
 	}

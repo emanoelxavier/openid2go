@@ -15,7 +15,7 @@ type testBody struct {
 func (testBody) Close() error { return nil }
 
 func Test_getConfiguration_UsesCorrectUrl(t *testing.T) {
-	c := NewConfigurationClientMock(t)
+	c := NewHTTPClientMock(t)
 	configurationProvider := httpConfigurationProvider{configurationGetter: c.httpGet}
 
 	issuer := "https://test"
@@ -35,7 +35,7 @@ func Test_getConfiguration_UsesCorrectUrl(t *testing.T) {
 }
 
 func Test_getConfiguration_WhenGetReturnsError(t *testing.T) {
-	c := NewConfigurationClientMock(t)
+	c := NewHTTPClientMock(t)
 	configurationProvider := httpConfigurationProvider{configurationGetter: c.httpGet}
 
 	readError := errors.New("Read configuration error")
@@ -46,31 +46,13 @@ func Test_getConfiguration_WhenGetReturnsError(t *testing.T) {
 
 	_, e := configurationProvider.getConfiguration("issuer")
 
-	if e == nil {
-		t.Error("An error was expected but not returned")
-	}
-
-	if ve, ok := e.(*ValidationError); ok {
-		ee := ValidationErrorGetOpenIdConfigurationFailure
-		es := http.StatusUnauthorized
-		if ve.Code != ee {
-			t.Error("Expected error code", ee, "but was", ve.Code)
-		}
-		if ve.HTTPStatus != es {
-			t.Error("Expected HTTP status", es, "but was", ve.HTTPStatus)
-		}
-		if ve.Err.Error() != readError.Error() {
-			t.Error("Expected inner error", readError.Error(), ",but was", ve.Err.Error())
-		}
-	} else {
-		t.Errorf("Expected error type '*ValidationError' but was %T", e)
-	}
+	expectValidationError(t, e, ValidationErrorGetOpenIdConfigurationFailure, http.StatusUnauthorized, readError)
 
 	c.assertDone()
 }
 
 func Test_getConfiguration_WhenGetSucceeds(t *testing.T) {
-	c := NewConfigurationClientMock(t)
+	c := NewHTTPClientMock(t)
 	configurationProvider := httpConfigurationProvider{c.httpGet, c.decodeResponse}
 
 	respBody := "openid configuration"
@@ -92,7 +74,7 @@ func Test_getConfiguration_WhenGetSucceeds(t *testing.T) {
 }
 
 func Test_getConfiguration_WhenDecodeResponseReturnsError(t *testing.T) {
-	c := NewConfigurationClientMock(t)
+	c := NewHTTPClientMock(t)
 	configurationProvider := httpConfigurationProvider{c.httpGet, c.decodeResponse}
 	decodeError := errors.New("Decode configuration error")
 	respBody := "openid configuration"
@@ -106,31 +88,13 @@ func Test_getConfiguration_WhenDecodeResponseReturnsError(t *testing.T) {
 
 	_, e := configurationProvider.getConfiguration(anything)
 
-	if e == nil {
-		t.Error("An error was expected but not returned")
-	}
-
-	if ve, ok := e.(*ValidationError); ok {
-		ee := ValidationErrorDecodeOpenIdConfigurationFailure
-		es := http.StatusUnauthorized
-		if ve.Code != ee {
-			t.Error("Expected error code", ee, "but was", ve.Code)
-		}
-		if ve.HTTPStatus != es {
-			t.Error("Expected HTTP status", es, "but was", ve.HTTPStatus)
-		}
-		if ve.Err.Error() != decodeError.Error() {
-			t.Error("Expected inner error", decodeError.Error(), ",but was", ve.Err.Error())
-		}
-	} else {
-		t.Errorf("Expected error type '*ValidationError' but was %T", e)
-	}
+	expectValidationError(t, e, ValidationErrorDecodeOpenIdConfigurationFailure, http.StatusUnauthorized, decodeError)
 
 	c.assertDone()
 }
 
 func Test_getConfiguration_WhenDecodeResponseSucceeds(t *testing.T) {
-	c := NewConfigurationClientMock(t)
+	c := NewHTTPClientMock(t)
 	configurationProvider := httpConfigurationProvider{c.httpGet, c.decodeResponse}
 	config := &configuration{"testissuer", "https://testissuer/jwk"}
 	respBody := "openid configuration"
@@ -157,4 +121,26 @@ func Test_getConfiguration_WhenDecodeResponseSucceeds(t *testing.T) {
 	}
 
 	c.assertDone()
+}
+
+func expectValidationError(t *testing.T, e error, vec ValidationErrorCode, status int, inner error) {
+	if e == nil {
+		t.Error("An error was expected but not returned")
+	}
+
+	if ve, ok := e.(*ValidationError); ok {
+		//		ee := ValidationErrorGetOpenIdConfigurationFailure
+		//		es := http.StatusUnauthorized
+		if ve.Code != vec {
+			t.Error("Expected error code", vec, "but was", ve.Code)
+		}
+		if ve.HTTPStatus != status {
+			t.Error("Expected HTTP status", status, "but was", ve.HTTPStatus)
+		}
+		if ve.Err.Error() != inner.Error() {
+			t.Error("Expected inner error", inner.Error(), ",but was", ve.Err.Error())
+		}
+	} else {
+		t.Errorf("Expected error type '*ValidationError' but was %T", e)
+	}
 }

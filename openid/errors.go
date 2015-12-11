@@ -39,8 +39,8 @@ const (
 	ValidationErrorIssuerNotFound                                                // Unexpected token value. Issuer not registered.
 	ValidationErrorGetOpenIdConfigurationFailure                                 // Failure while retrieving the OIDC configuration.
 	ValidationErrorDecodeOpenIdConfigurationFailure                              // Failure while decoding the OIDC configuration.
-	ValidationErrorGetJwkFailure                                                 // Failure while retrieving the token signing key.
-	ValidationErrorDecodeJwkFailure                                              // Failure while decoding the token signing key.
+	ValidationErrorGetJwksFailure                                                // Failure while retrieving jwk set.
+	ValidationErrorDecodeJwksFailure                                             // Failure while decoding the jwk set.
 	ValidationErrorEmptyJwk                                                      // Empty jwk returned.
 	ValidationErrorEmptyJwkKey                                                   // Empty jwk key set returned.
 	ValidationErrorMarshallingKey                                                // Error while marshalling the signing key.
