@@ -7,19 +7,19 @@ import (
 	"github.com/square/go-jose"
 )
 
-type jwksProvider interface {
-	getJwks(string) (*configuration, error)
+type jwksGetter interface {
+	getJwkSet(string) (jose.JsonWebKeySet, error)
 }
 
 type httpJwksProvider struct {
-	jwksGetter  httpGetFunc
-	jwksDecoder decodeResponseFunc
+	getJwks    httpGetFunc
+	decodeJwks decodeResponseFunc
 }
 
-func (httpProv httpJwksProvider) getJwks(url string) (jose.JsonWebKeySet, error) {
+func (httpProv httpJwksProvider) getJwkSet(url string) (jose.JsonWebKeySet, error) {
 
 	var jwks jose.JsonWebKeySet
-	resp, err := httpProv.jwksGetter(url)
+	resp, err := httpProv.getJwks(url)
 
 	if err != nil {
 		return jwks, &ValidationError{Code: ValidationErrorGetJwksFailure, Message: fmt.Sprintf("Failure while contacting the jwk endpoint %v.", url), Err: err, HTTPStatus: http.StatusUnauthorized}
@@ -27,7 +27,7 @@ func (httpProv httpJwksProvider) getJwks(url string) (jose.JsonWebKeySet, error)
 
 	defer resp.Body.Close()
 
-	if err := httpProv.jwksDecoder(resp.Body, &jwks); err != nil { //json.NewDecoder(resp.Body).Decode(&jwkSet); err != nil {
+	if err := httpProv.decodeJwks(resp.Body, &jwks); err != nil { //json.NewDecoder(resp.Body).Decode(&jwkSet); err != nil {
 		return jwks, &ValidationError{Code: ValidationErrorDecodeJwksFailure, Message: fmt.Sprintf("Failure while decoding the jwk retrieved from the  endpoint %v.", url), Err: err, HTTPStatus: http.StatusUnauthorized}
 	}
 

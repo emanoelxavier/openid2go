@@ -16,7 +16,7 @@ func (testBody) Close() error { return nil }
 
 func Test_getConfiguration_UsesCorrectUrl(t *testing.T) {
 	c := NewHTTPClientMock(t)
-	configurationProvider := httpConfigurationProvider{configurationGetter: c.httpGet}
+	configurationProvider := httpConfigurationProvider{getConfig: c.httpGet}
 
 	issuer := "https://test"
 	configSuffix := "/.well-known/openid-configuration"
@@ -36,7 +36,7 @@ func Test_getConfiguration_UsesCorrectUrl(t *testing.T) {
 
 func Test_getConfiguration_WhenGetReturnsError(t *testing.T) {
 	c := NewHTTPClientMock(t)
-	configurationProvider := httpConfigurationProvider{configurationGetter: c.httpGet}
+	configurationProvider := httpConfigurationProvider{getConfig: c.httpGet}
 
 	readError := errors.New("Read configuration error")
 	go func() {
@@ -129,15 +129,13 @@ func expectValidationError(t *testing.T, e error, vec ValidationErrorCode, statu
 	}
 
 	if ve, ok := e.(*ValidationError); ok {
-		//		ee := ValidationErrorGetOpenIdConfigurationFailure
-		//		es := http.StatusUnauthorized
 		if ve.Code != vec {
 			t.Error("Expected error code", vec, "but was", ve.Code)
 		}
 		if ve.HTTPStatus != status {
 			t.Error("Expected HTTP status", status, "but was", ve.HTTPStatus)
 		}
-		if ve.Err.Error() != inner.Error() {
+		if inner != nil && ve.Err.Error() != inner.Error() {
 			t.Error("Expected inner error", inner.Error(), ",but was", ve.Err.Error())
 		}
 	} else {

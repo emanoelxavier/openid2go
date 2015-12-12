@@ -11,20 +11,20 @@ const wellKnownOpenIdConfiguration = "/.well-known/openid-configuration"
 type httpGetFunc func(url string) (*http.Response, error)
 type decodeResponseFunc func(io.Reader, interface{}) error
 
-type configurationProvider interface {
-	getConfiguration(string) (*configuration, error)
+type configurationGetter interface { // Getter
+	getConfiguration(string) (configuration, error)
 }
 
-type httpConfigurationProvider struct {
-	configurationGetter  httpGetFunc
-	configurationDecoder decodeResponseFunc
+type httpConfigurationProvider struct { //configurationProvider
+	getConfig    httpGetFunc        //httpGetter
+	decodeConfig decodeResponseFunc //responseDecoder
 }
 
 func (httpProv httpConfigurationProvider) getConfiguration(issuer string) (configuration, error) {
 	configurationUri := issuer + wellKnownOpenIdConfiguration
 
 	var config configuration
-	resp, err := httpProv.configurationGetter(configurationUri) //http.Get(configurationUri)
+	resp, err := httpProv.getConfig(configurationUri) //http.Get(configurationUri)
 
 	if err != nil {
 		return config, &ValidationError{Code: ValidationErrorGetOpenIdConfigurationFailure, Message: fmt.Sprintf("Failure while contacting the configuration endpoint %v.", configurationUri), Err: err, HTTPStatus: http.StatusUnauthorized}
@@ -32,7 +32,7 @@ func (httpProv httpConfigurationProvider) getConfiguration(issuer string) (confi
 
 	defer resp.Body.Close()
 
-	if err := httpProv.configurationDecoder(resp.Body, &config); /*json.NewDecoder(resp.Body).Decode(&configuration)*/ err != nil {
+	if err := httpProv.decodeConfig(resp.Body, &config); /*json.NewDecoder(resp.Body).Decode(&configuration)*/ err != nil {
 		return config, &ValidationError{Code: ValidationErrorDecodeOpenIdConfigurationFailure, Message: fmt.Sprintf("Failure while decoding the configuration retrived from endpoint %v.", configurationUri), Err: err, HTTPStatus: http.StatusUnauthorized}
 	}
 
