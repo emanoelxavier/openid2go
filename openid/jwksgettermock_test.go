@@ -24,7 +24,7 @@ type getJwksResponse struct {
 	err  error
 }
 
-func (c *jwksGetterMock) getJwks(url string) (jose.JsonWebKeySet, error) {
+func (c *jwksGetterMock) getJwkSet(url string) (jose.JsonWebKeySet, error) {
 	c.Calls <- &getJwksCall{url}
 	gr := (<-c.Calls).(*getJwksResponse)
 	return gr.jwks, gr.err

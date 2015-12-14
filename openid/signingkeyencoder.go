@@ -7,6 +7,8 @@ import (
 	"net/http"
 )
 
+type pemEncodeFunc func(key interface{}) ([]byte, error)
+
 func pemEncodePublicKey(key interface{}) ([]byte, error) {
 	mk, err := x509.MarshalPKIXPublicKey(key)
 	if err != nil {

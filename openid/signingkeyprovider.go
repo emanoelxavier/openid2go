@@ -9,8 +9,6 @@ type signingKeyGetter interface {
 	getSigningKeys(issuer string) ([]signingKey, error)
 }
 
-type pemEncodeFunc func(key interface{}) ([]byte, error)
-
 type signingKeyProvider struct {
 	configGetter configurationGetter
 	jwksGetter   jwksGetter
