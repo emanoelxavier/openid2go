@@ -54,10 +54,11 @@ func Test_pemEncodePublicKey_UsingRSAPublicKey(t *testing.T) {
 	}
 
 	if rpk, ok := pub.(*rsa.PublicKey); ok {
-		// TODO: fix this comparison
-		/*if rpk.N != rsaKey.N {
-			t.Error("Expected N", rsaKey.N, "but got", rpk.N)
-		}*/
+		rn := rpk.N.Int64()
+		en := rsaKey.N.Int64()
+		if en != rn {
+			t.Error("Expected N", en, "but got", rn)
+		}
 		if rpk.E != rsaKey.E {
 			t.Error("Expected E", rsaKey.E, "but got", rpk.E)
 		}
