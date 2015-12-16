@@ -39,14 +39,13 @@ func (signProv signingKeyProvider) getSigningKeys(iss string, kid string) ([]sig
 
 	sk := make([]signingKey, len(jwks.Keys))
 
-	for _, k := range jwks.Keys {
+	for i, k := range jwks.Keys {
 		ek, err := signProv.keyEncoder(k.Key)
-
 		if err != nil {
 			return nil, err
 		}
 
-		sk = append(sk, signingKey{k.KeyID, ek})
+		sk[i] = signingKey{k.KeyID, ek}
 	}
 
 	return sk, nil
