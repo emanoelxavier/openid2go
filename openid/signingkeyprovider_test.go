@@ -15,6 +15,7 @@ func Test_getsigningKeys_WhenGetConfigurationReturnsError(t *testing.T) {
 
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, ee)
+		configGetter.close()
 	}()
 
 	sk, re := skProv.getSigningKeys(anything, anything)
@@ -24,6 +25,8 @@ func Test_getsigningKeys_WhenGetConfigurationReturnsError(t *testing.T) {
 	if sk != nil {
 		t.Error("The returned signing keys should be nil")
 	}
+
+	configGetter.assertDone()
 }
 
 func Test_getsigningKeys_WhenGetJwksReturnsError(t *testing.T) {
@@ -33,7 +36,9 @@ func Test_getsigningKeys_WhenGetJwksReturnsError(t *testing.T) {
 
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
+		configGetter.close()
 		jwksGetter.assertGetJwks(anything, jose.JsonWebKeySet{}, ee)
+		jwksGetter.close()
 
 	}()
 
@@ -44,6 +49,9 @@ func Test_getsigningKeys_WhenGetJwksReturnsError(t *testing.T) {
 	if sk != nil {
 		t.Error("The returned signing keys should be nil")
 	}
+
+	configGetter.assertDone()
+	jwksGetter.assertDone()
 }
 
 func Test_getsigningKeys_WhenJwkSetIsEmpty(t *testing.T) {
@@ -53,7 +61,9 @@ func Test_getsigningKeys_WhenJwkSetIsEmpty(t *testing.T) {
 
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
+		configGetter.close()
 		jwksGetter.assertGetJwks(anything, jose.JsonWebKeySet{}, nil)
+		jwksGetter.close()
 
 	}()
 
@@ -64,6 +74,9 @@ func Test_getsigningKeys_WhenJwkSetIsEmpty(t *testing.T) {
 	if sk != nil {
 		t.Error("The returned signing keys should be nil")
 	}
+
+	configGetter.assertDone()
+	jwksGetter.assertDone()
 }
 
 func Test_getsigningKeys_WhenKeyEncodingReturnsError(t *testing.T) {
@@ -74,8 +87,11 @@ func Test_getsigningKeys_WhenKeyEncodingReturnsError(t *testing.T) {
 
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
+		configGetter.close()
 		jwksGetter.assertGetJwks(anything, ejwks, nil)
+		jwksGetter.close()
 		pemEncoder.assertPEMEncodePublicKey(nil, nil, ee)
+		pemEncoder.close()
 	}()
 
 	sk, re := skProv.getSigningKeys(anything, anything)
@@ -85,6 +101,10 @@ func Test_getsigningKeys_WhenKeyEncodingReturnsError(t *testing.T) {
 	if sk != nil {
 		t.Error("The returned signing keys should be nil")
 	}
+
+	configGetter.assertDone()
+	jwksGetter.assertDone()
+	pemEncoder.assertDone()
 }
 
 func Test_getsigningKeys_WhenKeyEncodingReturnsSuccess(t *testing.T) {
@@ -105,6 +125,9 @@ func Test_getsigningKeys_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 		for i, encryptedKey := range encryptedKeys {
 			pemEncoder.assertPEMEncodePublicKey(keys[i].Key, encryptedKey.key, nil)
 		}
+		configGetter.close()
+		jwksGetter.close()
+		pemEncoder.close()
 	}()
 
 	sk, re := skProv.getSigningKeys(anything, anything)
@@ -129,6 +152,11 @@ func Test_getsigningKeys_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 			t.Error("Key at", i, "should be", encryptedKey.key, "but was", sk[i].key)
 		}
 	}
+
+	configGetter.assertDone()
+	jwksGetter.assertDone()
+	pemEncoder.assertDone()
+
 }
 
 func createSigningKeyProvider(t *testing.T) (*configurationGetterMock, *jwksGetterMock, *pemEncoderMock, signingKeyProvider) {
