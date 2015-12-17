@@ -15,8 +15,8 @@ type SetupErrorCode uint32
 
 // Setup error constants.
 const (
-	SetupErrorInvalideIssuer          SetupErrorCode = iota // Invalid issuer provided during setup.
-	SetupErrorInvalidClientIds                              // Invalid client id collection provided during setup.
+	SetupErrorInvalidIssuer           SetupErrorCode = iota // Invalid issuer provided during setup.
+	SetupErrorInvalidClientIDs                              // Invalid client id collection provided during setup.
 	SetupErrorEmptyProviderCollection                       // Empty collection of providers provided during setup.
 )
 
@@ -48,7 +48,7 @@ const (
 	ValidationErrorInvalidSubjectType                                            // Unexpected token subject type.
 	ValidationErrorInvalidSubject                                                // Unexpected token subject content.
 	ValidationErrorSubjectNotFound                                               // Token missing the 'sub' claim.
-	ValidationErrorIdTokenEmpty                                                  // Empty id token.
+	ValidationErrorIdTokenEmpty                                                  // Empty ID token.
 )
 
 // SetupError represents the error returned by operations called during
