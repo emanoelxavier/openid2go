@@ -1,169 +1,190 @@
 package openid
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
-
-	"github.com/square/go-jose"
 )
 
-func Test_getsigningKeySet_WhenGetConfigurationReturnsError(t *testing.T) {
-	configGetter, _, _, skProv := createSigningKeySetProvider(t)
+func Test_getsigningKey_WhenKeyIsCached(t *testing.T) {
+	_, keyCache := createSigningKeyProvider(t)
 
-	ee := &ValidationError{Code: ValidationErrorGetOpenIdConfigurationFailure, HTTPStatus: http.StatusUnauthorized}
+	iss := "issuer"
+	kid := "kid1"
+	key := "signingKey"
+	keyCache.jwksMap[iss] = []signingKey{{keyID: kid, key: []byte(key)}}
 
-	go func() {
-		configGetter.assertGetConfiguration(anything, configuration{}, ee)
-		configGetter.close()
-	}()
-
-	sk, re := skProv.getSigningKeySet(anything, anything)
-
-	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
-
-	if sk != nil {
-		t.Error("The returned signing keys should be nil")
-	}
-
-	configGetter.assertDone()
+	expectKey(t, keyCache, iss, kid, key)
 }
 
-func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
-	configGetter, jwksGetter, _, skProv := createSigningKeySetProvider(t)
+func Test_getsigningKey_WhenKeyIsNotCached_WhenProviderReturnsKey(t *testing.T) {
+	keyGetter, keyCache := createSigningKeyProvider(t)
 
+	iss := "issuer"
+	kid := "kid1"
+	key := "signingKey"
+
+	go func() {
+		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
+		keyGetter.close()
+	}()
+
+	expectKey(t, keyCache, iss, kid, key)
+
+	// Validate that the key is cached
+	expectCachedKid(t, keyCache, iss, kid, key)
+
+	keyGetter.assertDone()
+}
+
+func Test_getsigningKey_WhenProviderReturnsError(t *testing.T) {
+	keyGetter, keyCache := createSigningKeyProvider(t)
+
+	iss := "issuer"
+	kid := "kid1"
 	ee := &ValidationError{Code: ValidationErrorGetJwksFailure, HTTPStatus: http.StatusUnauthorized}
 
 	go func() {
-		configGetter.assertGetConfiguration(anything, configuration{}, nil)
-		configGetter.close()
-		jwksGetter.assertGetJwks(anything, jose.JsonWebKeySet{}, ee)
-		jwksGetter.close()
-
+		keyGetter.assertGetSigningKeySet(iss, nil, ee)
+		keyGetter.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(anything, anything)
+	rk, re := keyCache.getSigningKey(iss, kid)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
-	if sk != nil {
-		t.Error("The returned signing keys should be nil")
+	if rk != nil {
+		t.Error("A key was returned but not expected")
 	}
 
-	configGetter.assertDone()
-	jwksGetter.assertDone()
+	cachedKeys := keyCache.jwksMap[iss]
+	if len(cachedKeys) != 0 {
+		t.Fatal("There shouldnt be cached keys for the targeted issuer.")
+	}
+
+	keyGetter.assertDone()
 }
 
-func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
-	configGetter, jwksGetter, _, skProv := createSigningKeySetProvider(t)
+func Test_getsigningKey_WhenKeyIsNotFound(t *testing.T) {
+	keyGetter, keyCache := createSigningKeyProvider(t)
 
-	ee := &ValidationError{Code: ValidationErrorEmptyJwk, HTTPStatus: http.StatusUnauthorized}
+	iss := "issuer"
+	kid := "kid1"
+	tkid := "kid2"
+	key := "signingKey"
 
 	go func() {
-		configGetter.assertGetConfiguration(anything, configuration{}, nil)
-		configGetter.close()
-		jwksGetter.assertGetJwks(anything, jose.JsonWebKeySet{}, nil)
-		jwksGetter.close()
-
+		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
+		keyGetter.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(anything, anything)
+	rk, re := keyCache.getSigningKey(iss, tkid)
 
-	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
+	expectValidationError(t, re, ValidationErrorKidNotFound, http.StatusUnauthorized, nil)
 
-	if sk != nil {
-		t.Error("The returned signing keys should be nil")
+	if rk != nil {
+		t.Error("A key was returned but not expected")
 	}
 
-	configGetter.assertDone()
-	jwksGetter.assertDone()
+	expectCachedKid(t, keyCache, iss, kid, key)
+
+	keyGetter.assertDone()
 }
 
-func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
-	configGetter, jwksGetter, pemEncoder, skProv := createSigningKeySetProvider(t)
+func Test_flushCachedSigningKeys_FlushedKeysAreDeleted(t *testing.T) {
+	_, keyCache := createSigningKeyProvider(t)
 
-	ee := &ValidationError{Code: ValidationErrorMarshallingKey, HTTPStatus: http.StatusInternalServerError}
-	ejwks := jose.JsonWebKeySet{Keys: []jose.JsonWebKey{{Key: nil}}}
+	iss := "issuer"
+	iss2 := "issuer2"
+	kid := "kid1"
+	key := "signingKey"
+	keyCache.jwksMap[iss] = []signingKey{{keyID: kid, key: []byte(key)}}
+	keyCache.jwksMap[iss2] = []signingKey{{keyID: kid, key: []byte(key)}}
+
+	keyCache.flushCachedSigningKeys(iss2)
+
+	dk := keyCache.jwksMap[iss2]
+
+	if dk != nil {
+		t.Error("Flushed keys should not be in the cache.")
+	}
+
+	expectCachedKid(t, keyCache, iss, kid, key)
+}
+
+func Test_flushCachedSigningKey_RetrieveFlushedKey(t *testing.T) {
+	keyGetter, keyCache := createSigningKeyProvider(t)
+
+	iss := "issuer"
+	kid := "kid1"
+	key := "signingKey"
 
 	go func() {
-		configGetter.assertGetConfiguration(anything, configuration{}, nil)
-		configGetter.close()
-		jwksGetter.assertGetJwks(anything, ejwks, nil)
-		jwksGetter.close()
-		pemEncoder.assertPEMEncodePublicKey(nil, nil, ee)
-		pemEncoder.close()
+		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
+		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
+
+		keyGetter.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(anything, anything)
+	// Get the signing key not yet cached will cache it.
+	expectKey(t, keyCache, iss, kid, key)
 
-	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
+	// Flush the signing keys for the given provider.
+	keyCache.flushCachedSigningKeys(iss)
 
-	if sk != nil {
-		t.Error("The returned signing keys should be nil")
-	}
+	// Get the signing key will once again call the provider and cache the keys.
 
-	configGetter.assertDone()
-	jwksGetter.assertDone()
-	pemEncoder.assertDone()
+	expectKey(t, keyCache, iss, kid, key)
+
+	// Validate that the key is cached
+	expectCachedKid(t, keyCache, iss, kid, key)
+
+	keyGetter.assertDone()
 }
 
-func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
-	configGetter, jwksGetter, pemEncoder, skProv := createSigningKeySetProvider(t)
+func expectCachedKid(t *testing.T, keyProv *signingKeyProvider, iss string, kid string, key string) {
 
-	keys := make([]jose.JsonWebKey, 2)
-	encryptedKeys := make([]signingKey, 2)
-
-	for i := 0; i < cap(keys); i = i + 1 {
-		keys[i] = jose.JsonWebKey{KeyID: fmt.Sprintf("%v", i), Key: i}
-		encryptedKeys[i] = signingKey{keyID: fmt.Sprintf("%v", i), key: []byte(fmt.Sprintf("%v", i))}
+	cachedKeys := keyProv.jwksMap[iss]
+	if len(cachedKeys) == 0 {
+		t.Fatal("The keys were not cached as expected.")
 	}
 
-	ejwks := jose.JsonWebKeySet{Keys: keys}
-	go func() {
-		configGetter.assertGetConfiguration(anything, configuration{}, nil)
-		jwksGetter.assertGetJwks(anything, ejwks, nil)
-		for i, encryptedKey := range encryptedKeys {
-			pemEncoder.assertPEMEncodePublicKey(keys[i].Key, encryptedKey.key, nil)
+	foundKid := false
+	for _, cachedKey := range cachedKeys {
+		if cachedKey.keyID == kid {
+			foundKid = true
+			if keyStr := string(cachedKey.key); keyStr != key {
+				t.Error("Expected key", key, "but got", keyStr)
+			}
+
+			continue
 		}
-		configGetter.close()
-		jwksGetter.close()
-		pemEncoder.close()
-	}()
+	}
 
-	sk, re := skProv.getSigningKeySet(anything, anything)
+	if !foundKid {
+		t.Error("A key with key id", kid, "was not found.")
+	}
+}
+
+func expectKey(t *testing.T, c signingKeyGetter, iss string, kid string, key string) {
+
+	sk, re := c.getSigningKey(iss, kid)
 
 	if re != nil {
 		t.Error("An error was returned but not expected.")
 	}
 
 	if sk == nil {
-		t.Fatal("The returned signing keys should be not nil")
+		t.Fatal("The returned signing key should not be nil.")
 	}
 
-	if len(sk) != len(encryptedKeys) {
-		t.Error("Returned", len(sk), "encrypted keys, but expected", len(encryptedKeys))
+	keyStr := string(sk)
+
+	if keyStr != key {
+		t.Error("Expected key", key, "but got", keyStr)
 	}
-
-	for i, encryptedKey := range encryptedKeys {
-		if encryptedKey.keyID != sk[i].keyID {
-			t.Error("Key at", i, "should have keyID", encryptedKey.keyID, "but was", sk[i].keyID)
-		}
-		if string(encryptedKey.key) != string(sk[i].key) {
-			t.Error("Key at", i, "should be", encryptedKey.key, "but was", sk[i].key)
-		}
-	}
-
-	configGetter.assertDone()
-	jwksGetter.assertDone()
-	pemEncoder.assertDone()
-
 }
 
-func createSigningKeySetProvider(t *testing.T) (*configurationGetterMock, *jwksGetterMock, *pemEncoderMock, signingKeySetProvider) {
-	configGetter := newConfigurationGetterMock(t)
-	jwksGetter := newJwksGetterMock(t)
-	pemEncoder := newPEMEncoderMock(t)
-
-	skProv := signingKeySetProvider{configGetter: configGetter, jwksGetter: jwksGetter, keyEncoder: pemEncoder.pemEncodePublicKey}
-	return configGetter, jwksGetter, pemEncoder, skProv
+func createSigningKeyProvider(t *testing.T) (*signingKeySetGetterMock, *signingKeyProvider) {
+	mock := newSigningKeySetGetterMock(t)
+	return mock, newSigningKeyProvider(mock)
 }
