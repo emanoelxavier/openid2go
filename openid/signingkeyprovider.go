@@ -5,11 +5,11 @@ import (
 	"net/http"
 )
 
-type signingKeyGetter interface {
-	getSigningKeys(issuer string) ([]signingKey, error)
+type signingKeySetGetter interface {
+	getSigningKeySet(issuer string) ([]signingKey, error)
 }
 
-type signingKeyProvider struct {
+type signingKeySetProvider struct {
 	configGetter configurationGetter
 	jwksGetter   jwksGetter
 	keyEncoder   pemEncodeFunc
@@ -20,7 +20,7 @@ type signingKey struct {
 	key   []byte
 }
 
-func (signProv signingKeyProvider) getSigningKeys(iss string, kid string) ([]signingKey, error) {
+func (signProv signingKeySetProvider) getSigningKeySet(iss string, kid string) ([]signingKey, error) {
 	conf, err := signProv.configGetter.getConfiguration(iss)
 
 	if err != nil {

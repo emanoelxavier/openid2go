@@ -5,28 +5,28 @@ import (
 	"net/http"
 )
 
-type signingKeyCache interface {
-	flushSigningKeys(issuer string) error
+type signingKeyGetter interface {
+	flushCachedSigningKeys(issuer string) error
 	getSigningKey(issuer string, kid string) ([]byte, error)
 }
 
-type signingKeyMapCache struct {
-	keyGetter signingKeyGetter
-	jwksMap   map[string][]signingKey
+type signingKeyProvider struct {
+	keySetGetter signingKeySetGetter
+	jwksMap      map[string][]signingKey
 }
 
-func newSigningKeyMapCache(kg signingKeyGetter) *signingKeyMapCache {
+func newSigningKeyProvider(kg signingKeySetGetter) *signingKeyProvider {
 	keyMap := make(map[string][]signingKey)
-	return &signingKeyMapCache{kg, keyMap}
+	return &signingKeyProvider{kg, keyMap}
 }
 
-func (s *signingKeyMapCache) flushSigningKeys(issuer string) error {
+func (s *signingKeyProvider) flushCachedSigningKeys(issuer string) error {
 	delete(s.jwksMap, issuer)
 	return nil
 }
 
-func (s *signingKeyMapCache) refreshSigningKeys(issuer string) error {
-	skeys, err := s.keyGetter.getSigningKeys(issuer)
+func (s *signingKeyProvider) refreshSigningKeys(issuer string) error {
+	skeys, err := s.keySetGetter.getSigningKeySet(issuer)
 
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func (s *signingKeyMapCache) refreshSigningKeys(issuer string) error {
 	return nil
 }
 
-func (s *signingKeyMapCache) getSigningKey(issuer string, kid string) ([]byte, error) {
+func (s *signingKeyProvider) getSigningKey(issuer string, kid string) ([]byte, error) {
 	sk := findKey(s.jwksMap, issuer, kid)
 
 	if sk != nil {

@@ -6,7 +6,7 @@ import (
 )
 
 func Test_getsigningKey_WhenKeyIsCached(t *testing.T) {
-	_, keyCache := createSigningKeyMapCache(t)
+	_, keyCache := createSigningKeyProvider(t)
 
 	iss := "issuer"
 	kid := "kid1"
@@ -17,14 +17,14 @@ func Test_getsigningKey_WhenKeyIsCached(t *testing.T) {
 }
 
 func Test_getsigningKey_WhenKeyIsNotCached_WhenProviderReturnsKey(t *testing.T) {
-	keyGetter, keyCache := createSigningKeyMapCache(t)
+	keyGetter, keyCache := createSigningKeyProvider(t)
 
 	iss := "issuer"
 	kid := "kid1"
 	key := "signingKey"
 
 	go func() {
-		keyGetter.assertGetSigningKeys(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
+		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
 		keyGetter.close()
 	}()
 
@@ -37,14 +37,14 @@ func Test_getsigningKey_WhenKeyIsNotCached_WhenProviderReturnsKey(t *testing.T) 
 }
 
 func Test_getsigningKey_WhenProviderReturnsError(t *testing.T) {
-	keyGetter, keyCache := createSigningKeyMapCache(t)
+	keyGetter, keyCache := createSigningKeyProvider(t)
 
 	iss := "issuer"
 	kid := "kid1"
 	ee := &ValidationError{Code: ValidationErrorGetJwksFailure, HTTPStatus: http.StatusUnauthorized}
 
 	go func() {
-		keyGetter.assertGetSigningKeys(iss, nil, ee)
+		keyGetter.assertGetSigningKeySet(iss, nil, ee)
 		keyGetter.close()
 	}()
 
@@ -65,7 +65,7 @@ func Test_getsigningKey_WhenProviderReturnsError(t *testing.T) {
 }
 
 func Test_getsigningKey_WhenKeyIsNotFound(t *testing.T) {
-	keyGetter, keyCache := createSigningKeyMapCache(t)
+	keyGetter, keyCache := createSigningKeyProvider(t)
 
 	iss := "issuer"
 	kid := "kid1"
@@ -73,7 +73,7 @@ func Test_getsigningKey_WhenKeyIsNotFound(t *testing.T) {
 	key := "signingKey"
 
 	go func() {
-		keyGetter.assertGetSigningKeys(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
+		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
 		keyGetter.close()
 	}()
 
@@ -90,8 +90,8 @@ func Test_getsigningKey_WhenKeyIsNotFound(t *testing.T) {
 	keyGetter.assertDone()
 }
 
-func Test_flushSigningKeys_FlushedKeysAreDeleted(t *testing.T) {
-	_, keyCache := createSigningKeyMapCache(t)
+func Test_flushCachedSigningKeys_FlushedKeysAreDeleted(t *testing.T) {
+	_, keyCache := createSigningKeyProvider(t)
 
 	iss := "issuer"
 	iss2 := "issuer2"
@@ -100,7 +100,7 @@ func Test_flushSigningKeys_FlushedKeysAreDeleted(t *testing.T) {
 	keyCache.jwksMap[iss] = []signingKey{{keyID: kid, key: []byte(key)}}
 	keyCache.jwksMap[iss2] = []signingKey{{keyID: kid, key: []byte(key)}}
 
-	keyCache.flushSigningKeys(iss2)
+	keyCache.flushCachedSigningKeys(iss2)
 
 	dk := keyCache.jwksMap[iss2]
 
@@ -111,16 +111,16 @@ func Test_flushSigningKeys_FlushedKeysAreDeleted(t *testing.T) {
 	expectCachedKid(t, keyCache, iss, kid, key)
 }
 
-func Test_flushsigningKey_RetrieveFlushedKey(t *testing.T) {
-	keyGetter, keyCache := createSigningKeyMapCache(t)
+func Test_flushCachedSigningKey_RetrieveFlushedKey(t *testing.T) {
+	keyGetter, keyCache := createSigningKeyProvider(t)
 
 	iss := "issuer"
 	kid := "kid1"
 	key := "signingKey"
 
 	go func() {
-		keyGetter.assertGetSigningKeys(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
-		keyGetter.assertGetSigningKeys(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
+		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
+		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
 
 		keyGetter.close()
 	}()
@@ -129,7 +129,7 @@ func Test_flushsigningKey_RetrieveFlushedKey(t *testing.T) {
 	expectKey(t, keyCache, iss, kid, key)
 
 	// Flush the signing keys for the given provider.
-	keyCache.flushSigningKeys(iss)
+	keyCache.flushCachedSigningKeys(iss)
 
 	// Get the signing key will once again call the provider and cache the keys.
 
@@ -141,9 +141,9 @@ func Test_flushsigningKey_RetrieveFlushedKey(t *testing.T) {
 	keyGetter.assertDone()
 }
 
-func expectCachedKid(t *testing.T, keyCache *signingKeyMapCache, iss string, kid string, key string) {
+func expectCachedKid(t *testing.T, keyProv *signingKeyProvider, iss string, kid string, key string) {
 
-	cachedKeys := keyCache.jwksMap[iss]
+	cachedKeys := keyProv.jwksMap[iss]
 	if len(cachedKeys) == 0 {
 		t.Fatal("The keys were not cached as expected.")
 	}
@@ -165,7 +165,7 @@ func expectCachedKid(t *testing.T, keyCache *signingKeyMapCache, iss string, kid
 	}
 }
 
-func expectKey(t *testing.T, c signingKeyCache, iss string, kid string, key string) {
+func expectKey(t *testing.T, c signingKeyGetter, iss string, kid string, key string) {
 
 	sk, re := c.getSigningKey(iss, kid)
 
@@ -184,7 +184,7 @@ func expectKey(t *testing.T, c signingKeyCache, iss string, kid string, key stri
 	}
 }
 
-func createSigningKeyMapCache(t *testing.T) (*signingKeyGetterMock, *signingKeyMapCache) {
-	mock := newSigningKeyGetterMock(t)
-	return mock, newSigningKeyMapCache(mock)
+func createSigningKeyProvider(t *testing.T) (*signingKeySetGetterMock, *signingKeyProvider) {
+	mock := newSigningKeySetGetterMock(t)
+	return mock, newSigningKeyProvider(mock)
 }
