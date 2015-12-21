@@ -64,6 +64,10 @@ func (tv *idTokenValidator) getSigningKey(jt *jwt.Token) (interface{}, error) {
 		return nil, err
 	}
 
+	if len(provs) == 0 {
+		return nil, &ValidationError{Code: ValidationErrorEmptyProviders, Message: "The collection of providers should not be empty.", HTTPStatus: http.StatusUnauthorized}
+	}
+
 	p, err := validateIssuer(jt, provs)
 	if err != nil {
 		return nil, err
@@ -101,7 +105,7 @@ func validateIssuer(jt *jwt.Token, ps []Provider) (*Provider, error) {
 		}
 	}
 
-	return nil, &ValidationError{Code: ValidationErrorIssuerNotFound, Message: fmt.Sprintf("No provider was registered with issuer: %v", ti), HTTPStatus: http.StatusForbidden}
+	return nil, &ValidationError{Code: ValidationErrorIssuerNotFound, Message: fmt.Sprintf("No provider was registered with issuer: %v", ti), HTTPStatus: http.StatusUnauthorized}
 }
 
 func validateSubject(jt *jwt.Token) (string, error) {
@@ -128,7 +132,7 @@ func validateAudiences(jt *jwt.Token, p *Provider) (string, error) {
 	if aud, ok := audiencesClaim.(string); ok {
 		ta = aud
 	} else {
-		return ta, &ValidationError{Code: ValidationErrorInvalidAudienceType, Message: fmt.Sprintf("Invalid Audiences type: %T", audiencesClaim), HTTPStatus: http.StatusBadRequest}
+		return ta, &ValidationError{Code: ValidationErrorInvalidAudienceType, Message: fmt.Sprintf("Invalid Audiences type: %T", audiencesClaim), HTTPStatus: http.StatusUnauthorized}
 	}
 
 	if ta == "" {
@@ -141,7 +145,7 @@ func validateAudiences(jt *jwt.Token, p *Provider) (string, error) {
 		}
 	}
 
-	return ta, &ValidationError{Code: ValidationErrorAudienceNotFound, Message: fmt.Sprintf("The provider %v does not have a client id matching %v", p.Issuer, ta), HTTPStatus: http.StatusForbidden}
+	return ta, &ValidationError{Code: ValidationErrorAudienceNotFound, Message: fmt.Sprintf("The provider %v does not have a client id matching %v", p.Issuer, ta), HTTPStatus: http.StatusUnauthorized}
 }
 
 func getAudiences(t *jwt.Token) interface{} {

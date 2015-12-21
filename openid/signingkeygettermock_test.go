@@ -49,7 +49,6 @@ func (s *signingKeyGetterMock) assertGetSigningKey(iss string, keyID string, key
 	if keyID != anything && call.keyID != keyID {
 		s.t.Error("Expected getSigningKey with key ID", keyID, "but was", call.keyID)
 	}
-
 	s.Calls <- &getSigningKeyResp{key, err}
 }
 

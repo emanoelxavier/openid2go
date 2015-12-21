@@ -49,6 +49,7 @@ const (
 	ValidationErrorInvalidSubject                                                // Unexpected token subject content.
 	ValidationErrorSubjectNotFound                                               // Token missing the 'sub' claim.
 	ValidationErrorIdTokenEmpty                                                  // Empty ID token.
+	ValidationErrorEmptyProviders                                                // Empty collection of providers.
 )
 
 // SetupError represents the error returned by operations called during

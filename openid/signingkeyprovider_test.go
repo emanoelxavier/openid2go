@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_getsigningKey_WhenKeyIsCached(t *testing.T) {
+func Test_getSigningKey_WhenKeyIsCached(t *testing.T) {
 	_, keyCache := createSigningKeyProvider(t)
 
 	iss := "issuer"
@@ -16,7 +16,7 @@ func Test_getsigningKey_WhenKeyIsCached(t *testing.T) {
 	expectKey(t, keyCache, iss, kid, key)
 }
 
-func Test_getsigningKey_WhenKeyIsNotCached_WhenProviderReturnsKey(t *testing.T) {
+func Test_getSigningKey_WhenKeyIsNotCached_WhenProviderReturnsKey(t *testing.T) {
 	keyGetter, keyCache := createSigningKeyProvider(t)
 
 	iss := "issuer"
@@ -36,7 +36,7 @@ func Test_getsigningKey_WhenKeyIsNotCached_WhenProviderReturnsKey(t *testing.T) 
 	keyGetter.assertDone()
 }
 
-func Test_getsigningKey_WhenProviderReturnsError(t *testing.T) {
+func Test_getSigningKey_WhenProviderReturnsError(t *testing.T) {
 	keyGetter, keyCache := createSigningKeyProvider(t)
 
 	iss := "issuer"
@@ -64,7 +64,7 @@ func Test_getsigningKey_WhenProviderReturnsError(t *testing.T) {
 	keyGetter.assertDone()
 }
 
-func Test_getsigningKey_WhenKeyIsNotFound(t *testing.T) {
+func Test_getSigningKey_WhenKeyIsNotFound(t *testing.T) {
 	keyGetter, keyCache := createSigningKeyProvider(t)
 
 	iss := "issuer"
