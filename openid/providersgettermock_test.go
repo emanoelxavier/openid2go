@@ -7,7 +7,7 @@ type providersGetterMock struct {
 	Calls chan Call
 }
 
-func newprovidersGetterMock(t *testing.T) *providersGetterMock {
+func newProvidersGetterMock(t *testing.T) *providersGetterMock {
 	return &providersGetterMock{t, make(chan Call)}
 }
 

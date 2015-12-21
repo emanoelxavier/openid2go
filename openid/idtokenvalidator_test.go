@@ -31,6 +31,8 @@ func Test_getSigningKey_WhenGetProvidersReturnsError(t *testing.T) {
 	if err.Error() != ee.Error() {
 		t.Error("Expected error", ee, ", but got", err)
 	}
+
+	pm.assertDone()
 }
 
 func Test_getSigningKey_WhenGetProvidersReturnsEmptyCollection(t *testing.T) {
@@ -239,6 +241,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterReturnsError(t *test
 		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
 		sm.assertGetSigningKey(iss, keyID, nil, ee)
 		pm.close()
+		sm.close()
 	}()
 
 	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
@@ -251,6 +254,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterReturnsError(t *test
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, nil)
 	pm.assertDone()
+	sm.assertDone()
 }
 
 func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.T) {
@@ -264,6 +268,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.
 		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
 		sm.assertGetSigningKey(iss, keyID, []byte(esk), nil)
 		pm.close()
+		sm.close()
 	}()
 
 	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
@@ -272,26 +277,203 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.
 	jt.Claims["sub"] = "subject1"
 	jt.Header["kid"] = keyID
 
-	sk, err := tv.getSigningKey(jt)
+	rsk, err := tv.getSigningKey(jt)
 
 	if err != nil {
 		t.Error("An error was returned but not expected.", err)
 	}
 
-	if sk == nil {
+	expectSigningKey(t, rsk, jt, esk)
+
+	pm.assertDone()
+	sm.assertDone()
+}
+
+func Test_renewAndGetSigningKey_UsingValidToken_WhenFlushCachedSigningKeysReturnsError(t *testing.T) {
+	_, _, sm, tv := createIDTokenValidator(t)
+
+	ee := &ValidationError{Code: ValidationErrorIssuerNotFound, HTTPStatus: http.StatusUnauthorized}
+	go func() {
+		sm.assertFlushCachedSigningKeys(anything, ee)
+		sm.close()
+	}()
+
+	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
+	jt.Claims["iss"] = ""
+
+	_, err := tv.renewAndGetSigningKey(jt)
+
+	expectValidationError(t, err, ee.Code, ee.HTTPStatus, nil)
+
+	sm.assertDone()
+}
+
+func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeyReturnsError(t *testing.T) {
+	_, _, sm, tv := createIDTokenValidator(t)
+
+	ee := &ValidationError{Code: ValidationErrorIssuerNotFound, HTTPStatus: http.StatusUnauthorized}
+	go func() {
+		sm.assertFlushCachedSigningKeys(anything, nil)
+		sm.assertGetSigningKey(anything, anything, nil, ee)
+		sm.close()
+	}()
+
+	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
+	jt.Claims["iss"] = ""
+	jt.Header["kid"] = ""
+
+	_, err := tv.renewAndGetSigningKey(jt)
+
+	expectValidationError(t, err, ee.Code, ee.HTTPStatus, nil)
+
+	sm.assertDone()
+}
+
+func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeySucceeds(t *testing.T) {
+	_, _, sm, tv := createIDTokenValidator(t)
+	esk := "signingKey"
+
+	go func() {
+		sm.assertFlushCachedSigningKeys(anything, nil)
+		sm.assertGetSigningKey(anything, anything, []byte(esk), nil)
+		sm.close()
+	}()
+
+	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
+	jt.Claims["iss"] = ""
+	jt.Header["kid"] = ""
+
+	rsk, err := tv.renewAndGetSigningKey(jt)
+
+	if err != nil {
+		t.Error("An error was returned but not expected.", err)
+	}
+
+	expectSigningKey(t, rsk, jt, esk)
+
+	sm.assertDone()
+}
+
+func Test_validate_WhenParserReturnsErrorFirstTime(t *testing.T) {
+	_, jm, _, tv := createIDTokenValidator(t)
+
+	je := &jwt.ValidationError{Errors: jwt.ValidationErrorNotValidYet}
+	ee := &ValidationError{Code: ValidationErrorJwtValidationFailure, HTTPStatus: http.StatusUnauthorized}
+
+	go func() {
+		jm.assertParse(anything, nil, je)
+		jm.close()
+	}()
+
+	_, err := tv.validate(anything)
+
+	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
+
+	jm.assertDone()
+}
+
+func Test_validate_WhenParserSuceedsFirstTime(t *testing.T) {
+	_, jm, _, tv := createIDTokenValidator(t)
+
+	jt := &jwt.Token{}
+
+	go func() {
+		jm.assertParse(anything, jt, nil)
+		jm.close()
+	}()
+
+	rjt, err := tv.validate(anything)
+
+	if err != nil {
+		t.Error("Unexpected error was returned.", err)
+	}
+
+	if rjt != jt {
+		t.Errorf("Expected %+v, but got %+v.", jt, rjt)
+	}
+
+	jm.assertDone()
+}
+
+func Test_validate_WhenParserReturnsErrorSecondTime(t *testing.T) {
+	_, jm, _, tv := createIDTokenValidator(t)
+
+	jfe := &jwt.ValidationError{Errors: jwt.ValidationErrorSignatureInvalid}
+	je := &jwt.ValidationError{Errors: jwt.ValidationErrorMalformed}
+	ee := &ValidationError{Code: ValidationErrorJwtValidationFailure, HTTPStatus: http.StatusBadRequest}
+
+	go func() {
+		jm.assertParse(anything, nil, jfe)
+		jm.assertParse(anything, nil, je)
+		jm.close()
+	}()
+
+	_, err := tv.validate(anything)
+
+	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
+
+	jm.assertDone()
+}
+
+func Test_validate_WhenParserReturnsSignatureInvalidErrorSecondTime(t *testing.T) {
+	_, jm, _, tv := createIDTokenValidator(t)
+
+	je := &jwt.ValidationError{Errors: jwt.ValidationErrorSignatureInvalid}
+	ee := &ValidationError{Code: ValidationErrorJwtValidationFailure, HTTPStatus: http.StatusUnauthorized}
+
+	go func() {
+		jm.assertParse(anything, nil, je)
+		jm.assertParse(anything, nil, je)
+		jm.close()
+	}()
+
+	_, err := tv.validate(anything)
+
+	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
+
+	jm.assertDone()
+}
+
+func Test_validate_WhenParserSuceedsSecondTime(t *testing.T) {
+	_, jm, _, tv := createIDTokenValidator(t)
+
+	jfe := &jwt.ValidationError{Errors: jwt.ValidationErrorSignatureInvalid}
+
+	jt := &jwt.Token{}
+
+	go func() {
+		jm.assertParse(anything, jt, jfe)
+		jm.assertParse(anything, jt, nil)
+		jm.close()
+	}()
+
+	rjt, err := tv.validate(anything)
+
+	if err != nil {
+		t.Error("Unexpected error was returned.", err)
+	}
+
+	if rjt != jt {
+		t.Errorf("Expected %+v, but got %+v.", jt, rjt)
+	}
+
+	jm.assertDone()
+}
+
+func expectSigningKey(t *testing.T, rsk interface{}, jt *jwt.Token, esk string) {
+
+	if rsk == nil {
 		t.Fatal("The returned signing key was nil.")
 	}
 
-	if skb, ok := sk.([]byte); ok {
-		rsk := string(skb)
-		if rsk != esk {
-			t.Error("Expected signing key", esk, "but got", rsk)
+	if skb, ok := rsk.([]byte); ok {
+		rsks := string(skb)
+		if rsks != esk {
+			t.Error("Expected signing key", esk, "but got", rsks)
 		}
 	} else {
-		t.Errorf("Expected signing key type '[]byte', but got %T", sk)
+		t.Errorf("Expected signing key type '[]byte', but got %T", rsk)
 	}
-
-	pm.assertDone()
 }
 
 func createIDTokenValidator(t *testing.T) (*providersGetterMock, *jwtParserMock, *signingKeyGetterMock, *idTokenValidator) {
