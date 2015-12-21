@@ -20,7 +20,11 @@ type signingKey struct {
 	key   []byte
 }
 
-func (signProv signingKeySetProvider) getSigningKeySet(iss string, kid string) ([]signingKey, error) {
+func newSigningKeySetProvider(cg configurationGetter, jg jwksGetter, ke pemEncodeFunc) *signingKeySetProvider {
+	return &signingKeySetProvider{cg, jg, ke}
+}
+
+func (signProv *signingKeySetProvider) getSigningKeySet(iss string) ([]signingKey, error) {
 	conf, err := signProv.configGetter.getConfiguration(iss)
 
 	if err != nil {

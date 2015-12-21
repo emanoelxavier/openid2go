@@ -9,13 +9,13 @@ import (
 // GetIdTokenFunc represents the function used to provide the OIDC idToken.
 // It uses the provided request(r) to return the id token string(token).
 // If the token was not found or had a bad format this function will return an error.
-type GetIdTokenFunc func(r http.Request) (token string, err error)
+type GetIDTokenFunc func(r http.Request) (token string, err error)
 
 // GetIdTokenAuthorizationHeader is the default implementation of the GetIdTokenFunc
 // used by this package.I looks for the idToken in the http Authorization header with
 // the format 'Bearer TokenString'. If found it will return 'TokenString' if not found
 // or the format does not match it will return an error.
-func getIdTokenAuthorizationHeader(r http.Request) (t string, err error) {
+func getIDTokenAuthorizationHeader(r http.Request) (t string, err error) {
 	h := r.Header.Get("Authorization")
 	if h == "" {
 		return h, &ValidationError{Code: ValidationErrorAuthorizationHeaderNotFound, Message: "The 'Authorization' header was not found or was empty.", HTTPStatus: http.StatusBadRequest}

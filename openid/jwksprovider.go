@@ -16,7 +16,11 @@ type httpJwksProvider struct {
 	decodeJwks decodeResponseFunc
 }
 
-func (httpProv httpJwksProvider) getJwkSet(url string) (jose.JsonWebKeySet, error) {
+func newHTTPJwksProvider(gf httpGetFunc, df decodeResponseFunc) *httpJwksProvider {
+	return &httpJwksProvider{gf, df}
+}
+
+func (httpProv *httpJwksProvider) getJwkSet(url string) (jose.JsonWebKeySet, error) {
 
 	var jwks jose.JsonWebKeySet
 	resp, err := httpProv.getJwks(url)

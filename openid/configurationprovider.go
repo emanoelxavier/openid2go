@@ -1,6 +1,7 @@
 package openid
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,7 +21,15 @@ type httpConfigurationProvider struct { //configurationProvider
 	decodeConfig decodeResponseFunc //responseDecoder
 }
 
-func (httpProv httpConfigurationProvider) getConfiguration(issuer string) (configuration, error) {
+func newHTTPConfigurationProvider(gc httpGetFunc, dc decodeResponseFunc) *httpConfigurationProvider {
+	return &httpConfigurationProvider{gc, dc}
+}
+
+func jsonDecodeResponse(r io.Reader, v interface{}) error {
+	return json.NewDecoder(r).Decode(v)
+}
+
+func (httpProv *httpConfigurationProvider) getConfiguration(issuer string) (configuration, error) {
 	configurationUri := issuer + wellKnownOpenIdConfiguration
 
 	var config configuration

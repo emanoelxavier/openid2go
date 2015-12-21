@@ -45,26 +45,26 @@ func expectError(t *testing.T, e error, headerContent string, errorCode Validati
 }
 
 // Tests getIdTokenAuthorizationHeader providing an Authorization header with unexpected content.
-func Test_getIdTokenAuthorizationHeader_WrongHeaderContent(t *testing.T) {
+func Test_getIDTokenAuthorizationHeader_WrongHeaderContent(t *testing.T) {
 	for _, tt := range badHeaders {
 
-		_, err := getIdTokenAuthorizationHeader(createRequest(tt.header))
+		_, err := getIDTokenAuthorizationHeader(createRequest(tt.header))
 		expectError(t, err, tt.header, tt.errorCode, tt.httpStatus)
 	}
 }
 
 // Tests getIdTokenAuthorizationHeader providing a request without Authorization header.
-func Test_getIdTokenAuthorizationHeader_NoHeader(t *testing.T) {
-	_, err := getIdTokenAuthorizationHeader(http.Request{})
+func Test_getIDTokenAuthorizationHeader_NoHeader(t *testing.T) {
+	_, err := getIDTokenAuthorizationHeader(http.Request{})
 
 	expectError(t, err, "No Authorization Header", ValidationErrorAuthorizationHeaderNotFound, http.StatusBadRequest)
 }
 
 // Tests getIdTokenAuthorizationHeader providing an Authorization header with expected format.
-func Test_getIdTokenAuthorizationHeader_CorrectHeaderContent(t *testing.T) {
+func Test_getIDTokenAuthorizationHeader_CorrectHeaderContent(t *testing.T) {
 	et := "token"
 	hc := fmt.Sprintf("Bearer %v", et)
-	rt, err := getIdTokenAuthorizationHeader(createRequest(hc))
+	rt, err := getIDTokenAuthorizationHeader(createRequest(hc))
 
 	if err != nil {
 		t.Errorf("The header content %v is valid. Unexpected error", hc)

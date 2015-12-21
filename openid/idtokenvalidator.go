@@ -26,6 +26,10 @@ type idTokenValidator struct {
 	keyGetter  signingKeyGetter
 }
 
+func newIDTokenValidator(pg getProvidersFunc, jp jwtParserFunc, kg signingKeyGetter) *idTokenValidator {
+	return &idTokenValidator{pg, jp, kg}
+}
+
 func (tv *idTokenValidator) validate(t string) (*jwt.Token, error) {
 	jt, err := tv.jwtParser(t, tv.getSigningKey)
 	if err != nil {
@@ -64,8 +68,8 @@ func (tv *idTokenValidator) getSigningKey(jt *jwt.Token) (interface{}, error) {
 		return nil, err
 	}
 
-	if len(provs) == 0 {
-		return nil, &ValidationError{Code: ValidationErrorEmptyProviders, Message: "The collection of providers should not be empty.", HTTPStatus: http.StatusUnauthorized}
+	if err := providers(provs).validate(); err != nil {
+		return nil, err
 	}
 
 	p, err := validateIssuer(jt, provs)
