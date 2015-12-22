@@ -7,14 +7,15 @@ import (
 )
 
 // User represents the authenticated user encapsulating information obtained from the validated ID token.
+//
+// The Issuer contains the value from the 'iss' claim found in the ID Token.
+//
+// The ID contains the value of the 'sub' claim found in the ID Token.
+//
+// The Claims contains all the claims present found in the ID Token
 type User struct {
-	// Issuer Contains the value from the 'iss' claim found in the ID Token.
 	Issuer string
-
-	// ID Contains the value of the 'sub' claim found in the ID Token.
-	ID string
-
-	// Claimns contains all the claims present found in the ID Token
+	ID     string
 	Claims map[string]interface{}
 }
 

@@ -22,11 +22,11 @@ var badHeaders = []struct {
 
 // createRequest creates a request with the given string(headerContent) as the
 // http Authorization header and returns that request.
-func createRequest(headerContent string) http.Request {
+func createRequest(headerContent string) *http.Request {
 	r := http.Request{}
 	r.Header = http.Header(map[string][]string{})
 	r.Header.Set("Authorization", headerContent)
-	return r
+	return &r
 }
 
 // expectError validates whether the provided error(e) has
@@ -55,7 +55,7 @@ func Test_getIDTokenAuthorizationHeader_WrongHeaderContent(t *testing.T) {
 
 // Tests getIdTokenAuthorizationHeader providing a request without Authorization header.
 func Test_getIDTokenAuthorizationHeader_NoHeader(t *testing.T) {
-	_, err := getIDTokenAuthorizationHeader(http.Request{})
+	_, err := getIDTokenAuthorizationHeader(&http.Request{})
 
 	expectError(t, err, "No Authorization Header", ValidationErrorAuthorizationHeaderNotFound, http.StatusBadRequest)
 }

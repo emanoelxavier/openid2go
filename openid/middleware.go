@@ -71,6 +71,13 @@ func Authenticate(conf *Configuration, h http.Handler) http.Handler {
 	})
 }
 
+// The AuthenticateUser middleware performs the validation of the OIDC ID Token and
+// forwards the authenticated user's information to the next handler in the pipeline.
+// If an error happens, i.e.: expired token, the next handler may or may not executed depending on the
+// provided ErrorHandlerFunc option. The default behavior, determined by validationErrorToHTTPStatus,
+// stops the execution and returns Unauthorized.
+// If the validation is successful then the next handler(h) will be executed and will
+// receive the authenticated user information.
 func AuthenticateUser(conf *Configuration, h UserHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if u, halt := authenticateUser(conf, w, r); !halt {
@@ -94,7 +101,7 @@ func authenticate(c *Configuration, rw http.ResponseWriter, req *http.Request) (
 		eh = c.errorHandler
 	}
 
-	ts, err := tg(*req)
+	ts, err := tg(req)
 
 	if err != nil {
 		return nil, eh(err, rw, req)
