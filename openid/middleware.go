@@ -1,14 +1,14 @@
 package openid
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
 )
 
+// The Configuration contains the entities needed to perform ID token validation.
+// This type should be instantiated at the application startup time.
 type Configuration struct {
-	//	provGetter provGetter
 	tokenValidator jwtTokenValidator
 	idTokenGetter  GetIDTokenFunc
 	errorHandler   ErrorHandlerFunc
@@ -16,6 +16,10 @@ type Configuration struct {
 
 type option func(*Configuration) error
 
+// The NewConfiguration creates a new instance of Configuration and returns a pointer to it.
+// This function receives a collection of the function type option. Each of those functions are
+// responsible for setting some part of the returned *Configuration. If any if the option functions
+// returns an error then NewConfiguration will return a nil configuration and that error.
 func NewConfiguration(options ...option) (*Configuration, error) {
 	m := new(Configuration)
 	cp := newHTTPConfigurationProvider(http.Get, jsonDecodeResponse)
@@ -35,6 +39,8 @@ func NewConfiguration(options ...option) (*Configuration, error) {
 	return m, nil
 }
 
+// The ProvidersGetter option registers the function responsible for returning the
+// providers containing the valid issuer and client IDs used to validate the ID Token.
 func ProvidersGetter(pg getProvidersFunc) func(*Configuration) error {
 	return func(c *Configuration) error {
 		c.tokenValidator.(*idTokenValidator).provGetter = pg
@@ -42,6 +48,9 @@ func ProvidersGetter(pg getProvidersFunc) func(*Configuration) error {
 	}
 }
 
+// The ErrorHandler option registers the function responsible for handling
+// the errors returned during token validation. When this option is not used then the
+// middleware will use the default internal implementation validationErrorToHTTPStatus.
 func ErrorHandler(eh ErrorHandlerFunc) func(*Configuration) error {
 	return func(c *Configuration) error {
 		c.errorHandler = eh
@@ -49,19 +58,11 @@ func ErrorHandler(eh ErrorHandlerFunc) func(*Configuration) error {
 	}
 }
 
-type ErrorHandlerFunc func(error, http.ResponseWriter, *http.Request) bool
-
-func ValidationErrorToHTTPStatus(e error, rw http.ResponseWriter, req *http.Request) (halt bool) {
-	if verr, ok := e.(*ValidationError); ok {
-		http.Error(rw, verr.Message, verr.HTTPStatus)
-	} else {
-		rw.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(rw, e.Error())
-	}
-
-	return true
-}
-
+// The Authenticate middleware performs the validation of the OIDC ID Token.
+// If an error happens, i.e.: expired token, the next handler may or may not executed depending on the
+// provided ErrorHandlerFunc option. The default behavior, determined by validationErrorToHTTPStatus,
+// stops the execution and returns Unauthorized.
+// If the validation is successful then the next handler(h) will be executed.
 func Authenticate(conf *Configuration, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, halt := authenticate(conf, w, r); !halt {
@@ -88,7 +89,7 @@ func authenticate(c *Configuration, rw http.ResponseWriter, req *http.Request) (
 
 	var eh ErrorHandlerFunc
 	if c.errorHandler == nil {
-		eh = ValidationErrorToHTTPStatus
+		eh = validationErrorToHTTPStatus
 	} else {
 		eh = c.errorHandler
 	}
@@ -106,7 +107,6 @@ func authenticate(c *Configuration, rw http.ResponseWriter, req *http.Request) (
 	}
 
 	return vt, false
-
 }
 
 func authenticateUser(c *Configuration, rw http.ResponseWriter, req *http.Request) (u *User, halt bool) {
@@ -114,7 +114,7 @@ func authenticateUser(c *Configuration, rw http.ResponseWriter, req *http.Reques
 
 	var eh ErrorHandlerFunc
 	if c.errorHandler == nil {
-		eh = ValidationErrorToHTTPStatus
+		eh = validationErrorToHTTPStatus
 	} else {
 		eh = c.errorHandler
 	}
@@ -132,5 +132,4 @@ func authenticateUser(c *Configuration, rw http.ResponseWriter, req *http.Reques
 	}
 
 	return u, false
-
 }

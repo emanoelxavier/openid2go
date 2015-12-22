@@ -6,9 +6,15 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+// User represents the authenticated user encapsulating information obtained from the validated ID token.
 type User struct {
+	// Issuer Contains the value from the 'iss' claim found in the ID Token.
 	Issuer string
-	Id     string
+
+	// ID Contains the value of the 'sub' claim found in the ID Token.
+	ID string
+
+	// Claimns contains all the claims present found in the ID Token
 	Claims map[string]interface{}
 }
 
@@ -32,7 +38,7 @@ func newUser(t *jwt.Token) (*User, error) {
 
 	u := new(User)
 	u.Issuer = iss
-	u.Id = sub
+	u.ID = sub
 	u.Claims = t.Claims
 	return u, nil
 }

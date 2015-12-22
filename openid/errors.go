@@ -74,6 +74,15 @@ type ValidationError struct {
 	HTTPStatus int
 }
 
+// The ErrorHandlerFunc represents the function used to handle errors during token
+// validation. Applications can have their own implementation of this function and
+// register it using the ErrorHandler option. Through this extension point applications
+// can choose what to do upon different error types, for instance return an certain HTTP Status code
+// and/or include some detailed message in the response.
+// This function returns whether the next handler registered after the ID Token validation
+// should be executed when an error is found or if the execution should be stopped.
+type ErrorHandlerFunc func(error, http.ResponseWriter, *http.Request) bool
+
 // Error returns a formatted string containing the error Message.
 func (se ValidationError) Error() string {
 	return fmt.Sprintf("Error token validation: %v", se.Message)
@@ -92,4 +101,15 @@ func jwtErrorToOpenIdError(e error) *ValidationError {
 	}
 
 	return &ValidationError{Code: ValidationErrorJwtValidationUnknownFailure, Message: "Jwt token validation failed with unknown error.", HTTPStatus: http.StatusInternalServerError}
+}
+
+func validationErrorToHTTPStatus(e error, rw http.ResponseWriter, req *http.Request) (halt bool) {
+	if verr, ok := e.(*ValidationError); ok {
+		http.Error(rw, verr.Message, verr.HTTPStatus)
+	} else {
+		rw.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(rw, e.Error())
+	}
+
+	return true
 }
