@@ -15,12 +15,15 @@ import (
 
 const authenticatedMessage string = "The user has been authenticated."
 
+var idToken = flag.String("idToken", "", "a valid id token")
+var issuer = flag.String("opIssuer", "", "the OP issuer")
+var clientID = flag.String("clientID", "", "the client ID registered with the OP")
+
 func authenticatedHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, authenticatedMessage)
 }
 
 func Test_Authenticate_ValidIDToken(t *testing.T) {
-	var idToken = flag.String("idToken", "", "a valid id token")
 
 	config, err := openid.NewConfiguration(openid.ProvidersGetter(getProviders))
 
@@ -33,7 +36,7 @@ func Test_Authenticate_ValidIDToken(t *testing.T) {
 	client := http.DefaultClient
 
 	req, err := http.NewRequest("GET", ts.URL, nil)
-	req.Header.Add("Authorization", *idToken)
+	req.Header.Add("Authorization", "Bearer "+*idToken)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -47,15 +50,11 @@ func Test_Authenticate_ValidIDToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(msg) != authenticatedMessage {
-		t.Error("Expected response", authenticatedMessage, ",but got", msg)
+	if string(msg[:len(authenticatedMessage)]) != authenticatedMessage {
+		t.Error("Expected response:", authenticatedMessage, "but got:", string(msg))
 	}
-
 }
 
 func getProviders() ([]openid.Provider, error) {
-	var issuer = flag.String("opIssuer", "", "the OP issuer")
-	var clientID = flag.String("clientID", "", "the client ID registered with the OP")
-
 	return []openid.Provider{{Issuer: *issuer, ClientIDs: []string{*clientID}}}, nil
 }

@@ -103,8 +103,14 @@ func validateIssuer(jt *jwt.Token, ps []Provider) (*Provider, error) {
 		return nil, &ValidationError{Code: ValidationErrorInvalidIssuer, Message: "The token 'iss' claim was not found or was empty.", HTTPStatus: http.StatusUnauthorized}
 	}
 
+	// Workaround for tokens issued by google
+	gi := ti
+	if gi == "accounts.google.com" {
+		gi = "https://" + gi
+	}
+
 	for _, p := range ps {
-		if ti == p.Issuer {
+		if ti == p.Issuer || gi == p.Issuer {
 			return &p, nil
 		}
 	}

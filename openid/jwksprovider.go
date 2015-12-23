@@ -31,7 +31,7 @@ func (httpProv *httpJwksProvider) getJwkSet(url string) (jose.JsonWebKeySet, err
 
 	defer resp.Body.Close()
 
-	if err := httpProv.decodeJwks(resp.Body, &jwks); err != nil { //json.NewDecoder(resp.Body).Decode(&jwkSet); err != nil {
+	if err := httpProv.decodeJwks(resp.Body, &jwks); err != nil {
 		return jwks, &ValidationError{Code: ValidationErrorDecodeJwksFailure, Message: fmt.Sprintf("Failure while decoding the jwk retrieved from the  endpoint %v.", url), Err: err, HTTPStatus: http.StatusUnauthorized}
 	}
 

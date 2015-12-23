@@ -30,10 +30,13 @@ func jsonDecodeResponse(r io.Reader, v interface{}) error {
 }
 
 func (httpProv *httpConfigurationProvider) getConfiguration(issuer string) (configuration, error) {
+	// Workaround for tokens issued by google
+	if issuer == "accounts.google.com" {
+		issuer = "https://" + issuer
+	}
 	configurationUri := issuer + wellKnownOpenIdConfiguration
-
 	var config configuration
-	resp, err := httpProv.getConfig(configurationUri) //http.Get(configurationUri)
+	resp, err := httpProv.getConfig(configurationUri)
 
 	if err != nil {
 		return config, &ValidationError{Code: ValidationErrorGetOpenIdConfigurationFailure, Message: fmt.Sprintf("Failure while contacting the configuration endpoint %v.", configurationUri), Err: err, HTTPStatus: http.StatusUnauthorized}
@@ -41,7 +44,7 @@ func (httpProv *httpConfigurationProvider) getConfiguration(issuer string) (conf
 
 	defer resp.Body.Close()
 
-	if err := httpProv.decodeConfig(resp.Body, &config); /*json.NewDecoder(resp.Body).Decode(&configuration)*/ err != nil {
+	if err := httpProv.decodeConfig(resp.Body, &config); err != nil {
 		return config, &ValidationError{Code: ValidationErrorDecodeOpenIdConfigurationFailure, Message: fmt.Sprintf("Failure while decoding the configuration retrived from endpoint %v.", configurationUri), Err: err, HTTPStatus: http.StatusUnauthorized}
 	}
 
