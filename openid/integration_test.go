@@ -13,29 +13,39 @@ import (
 	"github.com/emanoelxavier/openid2go/openid"
 )
 
-const authenticatedMessage string = "The user has been authenticated."
+const authenticatedMessage string = "Congrats, you are authenticated!"
 
 var idToken = flag.String("idToken", "", "a valid id token")
 var issuer = flag.String("opIssuer", "", "the OP issuer")
 var clientID = flag.String("clientID", "", "the client ID registered with the OP")
 
+var server *httptest.Server
+
+// The authenticateHandler is registered behind the openid.Authenticate middleware
 func authenticatedHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, authenticatedMessage)
 }
 
-func Test_Authenticate_ValidIDToken(t *testing.T) {
-
+// Init initiliazes the http.server to be used by the integration tests.
+func init() {
+	mux := http.NewServeMux()
 	config, err := openid.NewConfiguration(openid.ProvidersGetter(getProviders))
 
 	if err != nil {
-		t.Fatal("Error whe creating the configuration for the openid middleware.")
+		fmt.Println("Error whe creating the configuration for the openid middleware.", err)
 	}
 
-	ts := httptest.NewServer(openid.Authenticate(config, http.HandlerFunc(authenticatedHandler)))
-	defer ts.Close()
+	mux.Handle("/authn", openid.Authenticate(config, http.HandlerFunc(authenticatedHandler)))
+
+	server = httptest.NewServer(mux)
+}
+
+func Test_Authenticate_ValidIDToken(t *testing.T) {
+	defer server.Close()
+
 	client := http.DefaultClient
 
-	req, err := http.NewRequest("GET", ts.URL, nil)
+	req, err := http.NewRequest("GET", server.URL+"/authn", nil)
 	req.Header.Add("Authorization", "Bearer "+*idToken)
 	resp, err := client.Do(req)
 
@@ -50,8 +60,11 @@ func Test_Authenticate_ValidIDToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(msg[:len(authenticatedMessage)]) != authenticatedMessage {
-		t.Error("Expected response:", authenticatedMessage, "but got:", string(msg))
+	msgs := string(msg[:len(authenticatedMessage)])
+	if msgs != authenticatedMessage {
+		t.Error("Expected response:", authenticatedMessage, "but got:", msgs)
+	} else {
+		t.Log(msgs)
 	}
 }
 
