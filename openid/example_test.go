@@ -11,14 +11,20 @@ func AuthenticatedHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "The user was authenticated!")
 }
 
-func UnauthenticatedHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Reached without authentication!")
-}
-
 func AuthenticatedHandlerWithUser(u *openid.User, w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "The user was autthenticated! The token was issued by %v and the user is %+v.", u.Issuer, u)
 }
 
+func UnauthenticatedHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Reached without authentication!")
+}
+
+// This example demonstrates how to make use of the openid middlewares to validate incoming
+// ID Tokens in the HTTP Authorization header with the format 'Bearer id_token'.
+// It initializes the openid.Configuration with the desired providers (OPs)
+// and registers two middlewares: openid.Authenticate and openid.AuthenticateUser.
+// The former will validate the ID token and fail the call if the token is not valid.
+// The latter will do the same but forward the user's information extracted from the token to the next handler.
 func Example() {
 	configuration, _ := openid.NewConfiguration(openid.ProvidersGetter(getProviders_googlePlayground))
 
