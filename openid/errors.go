@@ -52,6 +52,9 @@ const (
 	ValidationErrorEmptyProviders                                                // Empty collection of providers.
 )
 
+const setupErrorMessagePrefix string = "Setup Error."
+const validationErrorMessagePrefix string = "Validation Error."
+
 // SetupError represents the error returned by operations called during
 // middleware setup.
 type SetupError struct {
@@ -62,7 +65,7 @@ type SetupError struct {
 
 // Error returns a formatted string containing the error Message.
 func (se SetupError) Error() string {
-	return fmt.Sprintf("Error during middleware setup: %v", se.Message)
+	return fmt.Sprintf("Setup error. %v", se.Message)
 }
 
 // ValidationError represents the error returned by operations called during
@@ -84,8 +87,8 @@ type ValidationError struct {
 type ErrorHandlerFunc func(error, http.ResponseWriter, *http.Request) bool
 
 // Error returns a formatted string containing the error Message.
-func (se ValidationError) Error() string {
-	return fmt.Sprintf("Error token validation: %v", se.Message)
+func (ve ValidationError) Error() string {
+	return fmt.Sprintf("Validation error. %v", ve.Message)
 }
 
 // jwtErrorToOpenIdError converts errors of the type *jwt.ValidationError returned during token validation into errors of type *ValidationError
@@ -97,6 +100,12 @@ func jwtErrorToOpenIdError(e error) *ValidationError {
 
 		if (jwtError.Errors & jwt.ValidationErrorMalformed) != 0 {
 			return &ValidationError{Code: ValidationErrorJwtValidationFailure, Message: "Jwt token validation failed.", HTTPStatus: http.StatusBadRequest}
+		}
+
+		if (jwtError.Errors & jwt.ValidationErrorUnverifiable) != 0 {
+			// TODO: improve this once https://github.com/dgrijalva/jwt-go/issues/108 is resolved.
+			// Currently jwt.Parse does not surface errors returned by the KeyFunc.
+			return &ValidationError{Code: ValidationErrorJwtValidationFailure, Message: jwtError.Error(), HTTPStatus: http.StatusUnauthorized}
 		}
 	}
 

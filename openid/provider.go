@@ -3,13 +3,14 @@ package openid
 // Provider represents an OpenId Identity Provider (OP) and contains
 // the information needed to perform validation of ID Token.
 // See OpenId terminology http://openid.net/specs/openid-connect-core-1_0.html#Terminology.
+//
+// The Issuer uniquely identifies an OP. This field will be used
+// to validate the 'iss' claim present in the ID Token.
+//
+// The CliendIDs contains the list of client IDs registered with the OP that are meant to be accepted by the service using this package.
+// These values are used to validate the 'aud' clain present in the ID Token.
 type Provider struct {
-	// The Issuer uniquely identifies an OP. This field will be used
-	// to validate the 'iss' claim present in the ID Token.
-	Issuer string
-
-	// The CliendIDs contains the list of client IDs registered with the OP that are meant to be accepted by the service using this package.
-	// These values are used to validate the 'aud' clain present in the ID Token.
+	Issuer    string
 	ClientIDs []string
 }
 
@@ -26,6 +27,13 @@ func NewProvider(issuer string, clientIDs []string) (Provider, error) {
 
 	return p, nil
 }
+
+// The GetProvidersFunc defines the function type used to retrieve the collection of allowed OP(s) along with the
+// respective client IDs registered with those providers that can access the backend service
+// using this package.
+// A function of this type must be provided to NewConfiguration through the option ProvidersGetter.
+// The given function will then be invoked for every request intercepted by the Authenticate or AuthenticateUser middleware.
+type GetProvidersFunc func() ([]Provider, error)
 
 func (ps providers) validate() error {
 	if len(ps) == 0 {

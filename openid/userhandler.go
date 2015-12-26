@@ -12,11 +12,11 @@ type UserHandler interface {
 	ServeHTTPWithUser(*User, http.ResponseWriter, *http.Request)
 }
 
-// The ServeHTTPWithUserFunc is an adapter to allow the use of functions as UserHandler.
+// The UserHandlerFunc is an adapter to allow the use of functions as UserHandler.
 // This is similar to using http.HandlerFunc as http.Handler
-type ServeHTTPWithUserFunc func(*User, http.ResponseWriter, *http.Request)
+type UserHandlerFunc func(*User, http.ResponseWriter, *http.Request)
 
 // ServeHttpWithUser calls f(u, w, r)
-func (f ServeHTTPWithUserFunc) ServeHTTPWithUser(u *User, w http.ResponseWriter, r *http.Request) {
+func (f UserHandlerFunc) ServeHTTPWithUser(u *User, w http.ResponseWriter, r *http.Request) {
 	f(u, w, r)
 }

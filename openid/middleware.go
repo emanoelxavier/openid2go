@@ -41,7 +41,7 @@ func NewConfiguration(options ...option) (*Configuration, error) {
 
 // The ProvidersGetter option registers the function responsible for returning the
 // providers containing the valid issuer and client IDs used to validate the ID Token.
-func ProvidersGetter(pg getProvidersFunc) func(*Configuration) error {
+func ProvidersGetter(pg GetProvidersFunc) func(*Configuration) error {
 	return func(c *Configuration) error {
 		c.tokenValidator.(*idTokenValidator).provGetter = pg
 		return nil

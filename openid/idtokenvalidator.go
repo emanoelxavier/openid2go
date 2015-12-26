@@ -16,17 +16,15 @@ type jwtTokenValidator interface {
 	validate(t string) (jt *jwt.Token, err error)
 }
 
-type getProvidersFunc func() ([]Provider, error)
-
 type jwtParserFunc func(string, jwt.Keyfunc) (*jwt.Token, error)
 
 type idTokenValidator struct {
-	provGetter getProvidersFunc
+	provGetter GetProvidersFunc
 	jwtParser  jwtParserFunc
 	keyGetter  signingKeyGetter
 }
 
-func newIDTokenValidator(pg getProvidersFunc, jp jwtParserFunc, kg signingKeyGetter) *idTokenValidator {
+func newIDTokenValidator(pg GetProvidersFunc, jp jwtParserFunc, kg signingKeyGetter) *idTokenValidator {
 	return &idTokenValidator{pg, jp, kg}
 }
 
