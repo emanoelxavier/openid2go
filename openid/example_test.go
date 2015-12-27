@@ -19,7 +19,7 @@ func UnauthenticatedHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Reached without authentication!")
 }
 
-// This example demonstrates how to make use of the openid middlewares to validate incoming
+// This example demonstrates how to use of the openid middlewares to validate incoming
 // ID Tokens in the HTTP Authorization header with the format 'Bearer id_token'.
 // It initializes the openid.Configuration with the desired providers (OPs)
 // and registers two middlewares: openid.Authenticate and openid.AuthenticateUser.

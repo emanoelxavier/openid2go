@@ -1,5 +1,3 @@
-// Package openid implements middlewares to perform validation of OIDC (OpenId Connect)
-// id tokens and make available the identity of the authenticated user.
 package openid
 
 import (
