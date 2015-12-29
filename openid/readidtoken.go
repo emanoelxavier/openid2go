@@ -1,4 +1,3 @@
-// Package validates id tokens
 package openid
 
 import (

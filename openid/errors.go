@@ -80,8 +80,8 @@ type ValidationError struct {
 // register it using the ErrorHandler option. Through this extension point applications
 // can choose what to do upon different error types, for instance return an certain HTTP Status code
 // and/or include some detailed message in the response.
-// This function returns whether the next handler registered after the ID Token validation
-// should be executed when an error is found or if the execution should be stopped.
+// This function returns false if the next handler registered after the ID Token validation
+// should be executed when an error is found or true if the execution should be stopped.
 type ErrorHandlerFunc func(error, http.ResponseWriter, *http.Request) bool
 
 // Error returns a formatted string containing the error Message.
