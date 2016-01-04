@@ -37,7 +37,6 @@ func (httpProv *httpConfigurationProvider) getConfiguration(issuer string) (conf
 	configurationUri := issuer + wellKnownOpenIdConfiguration
 	var config configuration
 	resp, err := httpProv.getConfig(configurationUri)
-
 	if err != nil {
 		return config, &ValidationError{Code: ValidationErrorGetOpenIdConfigurationFailure, Message: fmt.Sprintf("Failure while contacting the configuration endpoint %v.", configurationUri), Err: err, HTTPStatus: http.StatusUnauthorized}
 	}

@@ -208,6 +208,28 @@ func Test_getSigningKey_UsingTokenWithUnknownAudience(t *testing.T) {
 	pm.assertDone()
 }
 
+func Test_getSigningKey_UsingTokenWithUnknownMultipleAudiences(t *testing.T) {
+	pm, _, _, tv := createIDTokenValidator(t)
+
+	go func() {
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client1", "client2"}}}, nil)
+		pm.close()
+	}()
+
+	jt := &jwt.Token{Claims: make(map[string]interface{})}
+	jt.Claims["iss"] = "https://issuer"
+	jt.Claims["aud"] = []interface{}{"client3", "client4"} // unknown audiences
+
+	sk, err := tv.getSigningKey(jt)
+
+	if sk != nil {
+		t.Error("The returned signing key should be nil.")
+	}
+
+	expectValidationError(t, err, ValidationErrorAudienceNotFound, http.StatusUnauthorized, nil)
+	pm.assertDone()
+}
+
 func Test_getSigningKey_UsingTokenWithInvalidSubjectType(t *testing.T) {
 	pm, _, _, tv := createIDTokenValidator(t)
 
@@ -274,6 +296,38 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.
 	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
 	jt.Claims["iss"] = iss
 	jt.Claims["aud"] = "client"
+	jt.Claims["sub"] = "subject1"
+	jt.Header["kid"] = keyID
+
+	rsk, err := tv.getSigningKey(jt)
+
+	if err != nil {
+		t.Error("An error was returned but not expected.", err)
+	}
+
+	expectSigningKey(t, rsk, jt, esk)
+
+	pm.assertDone()
+	sm.assertDone()
+}
+
+func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
+	pm, _, sm, tv := createIDTokenValidator(t)
+
+	iss := "https://issuer"
+	keyID := "kid"
+	esk := "signingKey"
+
+	go func() {
+		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
+		sm.assertGetSigningKey(iss, keyID, []byte(esk), nil)
+		pm.close()
+		sm.close()
+	}()
+
+	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
+	jt.Claims["iss"] = iss
+	jt.Claims["aud"] = []interface{}{"unknown", "client"}
 	jt.Claims["sub"] = "subject1"
 	jt.Header["kid"] = keyID
 
