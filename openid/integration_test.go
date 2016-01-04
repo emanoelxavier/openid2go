@@ -17,26 +17,26 @@ import (
 const authenticatedMessage string = "Congrats, you are authenticated!"
 const authenticatedMessageWithUser string = "Congrats, you are authenticated by the provider %v!"
 
-// The idToken flag must have a valid ID Token issued by any OIDC provider
+// The idToken flag must have a valid ID Token issued by any OIDC provider.
 var idToken = flag.String("idToken", "", "a valid id token")
 
-// The issuer flag must have a valid issuer
+// The issuer and cliendID  flags must be valid.
 var issuer = flag.String("issuer", "", "the OP issuer")
 var clientID = flag.String("clientID", "", "the client ID registered with the OP")
 
 var mux *http.ServeMux
 
-// The authenticateHandler is registered behind the openid.Authenticate middleware
+// The authenticateHandler is registered behind the openid.Authenticate middleware.
 func authenticatedHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, authenticatedMessage)
 }
 
-// The authenticateHandlerWithUser is registered behind the openid.AuthenticateUser middleware
+// The authenticateHandlerWithUser is registered behind the openid.AuthenticateUser middleware.
 func authenticatedHandlerWithUser(u *openid.User, w http.ResponseWriter, r *http.Request) {
 	iss := u.Issuer
 
 	// Workaround for Google OP since it has a bug causing the 'iss' claim to miss the 'https://'
-	if strings.HasPrefix(*issuer, "https://") {
+	if strings.HasPrefix(*issuer, "https://") && !strings.HasPrefix(iss, "https://") {
 		iss = "https://" + iss
 	}
 
@@ -76,11 +76,24 @@ func Test_Authenticate_InvalidIDTokenKeyID(t *testing.T) {
 	defer server.Close()
 	et := "eyJhbGciOiJSUzI1NiIsImtpZCI6ImNiMzVkMTZjZmI4MWY2ZTUzZDk5YTBmODg4YjRhZTgyNWE3MWU1Y2MifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXRfaGFzaCI6Im1iVVZpRlFReUFPX2Y1YlR0alVvREEiLCJhdWQiOiI0MDc0MDg3MTgxOTIuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTI2Nzg1OTg3MTA3MDYxNzA2NDkiLCJhenAiOiI0MDc0MDg3MTgxOTIuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJpYXQiOjE0NTA5MjkxMjAsImV4cCI6MTQ1MDkzMjcyMH0.f5toakDvtU3Tqt71uDgIACrac8mGM4K8HQ1Fyw9jaUdxonEu_Bww-UNKjPD6tKAe7AzVJzfKOzzcvJygMRfQ72u4wsljhQV3i6-cJmpMj4S5HQoleV4GqNHq-84KNEvFv_4IT7wIEdu0kEpRygt9lhysvFXxGfkR6TpTr50W8yo4T0EfRVXafXhNMX5uNkVJ2PnHQXYvwiZP2_hJ6KTw9RN_4mDJIOHJBAXRXnBe9hJ7pDfED1v_ayOJGmq5PGeAO34Rz7FDf4Awf8DOoMiRVSi3SwE_pRHwBRp2WsrvKpSdUToXyOmBEzPYubEJIcYPiJR4uXgPEOynV0i993NGQA"
 
+	// Changing the client ID and issuer to match the ones in the token.
+	cID := "407408718192.apps.googleusercontent.com"
+	cIDp := &cID
+	cIDp, clientID = clientID, cIDp
+	iss := "accounts.google.com"
+	issp := &iss
+	issp, issuer = issuer, issp
+
 	// Act.
 	res, code, err := executeRequest(server.URL, "/user", et)
 
 	// Assert.
 	validateResponse(t, err, res, code, "", http.StatusUnauthorized)
+
+	// Clean up.
+	// Swapping back the values for the next test.
+	clientID = cIDp
+	issuer = issp
 }
 
 // Validates that an ID Token issued for an audience that is not registered as an
@@ -104,7 +117,7 @@ func Test_Authenticate_ChangeClientID_InvalidateIDToken(t *testing.T) {
 
 	// Clean up.
 	// Swapping back the values for the next test.
-	clientID, cIDp = cIDp, clientID
+	clientID = cIDp
 }
 
 // Validates that a valid ID Token results in a successful authentication of the user.
