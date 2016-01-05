@@ -33,8 +33,9 @@ func AuthenticatedHandlerWithUser(u *openid.User, w http.ResponseWriter, r *http
 
 func Example() {
 	configuration, err := openid.NewConfiguration(openid.ProvidersGetter(getProviders_googlePlayground))
-    if err != nil {
-		return nil, err
+
+	if err != nil {
+		panic(err)
 	}
 	
 	http.Handle("/user", openid.AuthenticateUser(configuration, openid.UserHandlerFunc(AuthenticatedHandlerWithUser)))

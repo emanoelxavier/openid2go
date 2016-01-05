@@ -26,7 +26,11 @@ func UnauthenticatedHandler(w http.ResponseWriter, r *http.Request) {
 // The former will validate the ID Token and fail the call if the token is not valid.
 // The latter will do the same but forward the user's information extracted from the token to the next handler.
 func Example() {
-	configuration, _ := openid.NewConfiguration(openid.ProvidersGetter(getProviders_googlePlayground))
+	configuration, err := openid.NewConfiguration(openid.ProvidersGetter(getProviders_googlePlayground))
+
+	if err != nil {
+		panic(err)
+	}
 
 	http.Handle("/user", openid.AuthenticateUser(configuration, openid.UserHandlerFunc(AuthenticatedHandlerWithUser)))
 	http.Handle("/authn", openid.Authenticate(configuration, http.HandlerFunc(AuthenticatedHandler)))
