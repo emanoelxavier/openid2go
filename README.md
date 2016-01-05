@@ -1,7 +1,7 @@
 Go OpenId
 ===========
 [![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/emanoelxavier/openid2go/openid)
-[![license](http://img.shields.io/github/license/mashape/apistatus.svg?style=flat)](https://raw.githubusercontent.com/emanoelxavier/openid2go/master/openid/LICENSE)
+[![license](http://img.shields.io/badge/license-MIT-yellowgreen.svg?style=flat)](https://raw.githubusercontent.com/emanoelxavier/openid2go/master/openid/LICENSE)
 ## Summary
 
 A Go package that implements web service middlewares for authenticating identities represented by OpenID Connect (OIDC) ID Tokens.
