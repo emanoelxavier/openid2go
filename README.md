@@ -52,7 +52,7 @@ func myGetProviders() ([]openid.Provider, error) {
 	return []openid.Provider{provider}, nil
 }
 ```
-This example is also available in the documentation of this package, for more details see [GoDoc](https://godoc.org/github.com/emanoelxavier/openid2go/openid)
+This example is also available in the documentation of this package, for more details see [GoDoc](https://godoc.org/github.com/emanoelxavier/openid2go/openid).
 
 ## Tests
 
@@ -67,7 +67,7 @@ In addition to to unit tests, this package also comes with integration tests tha
 
 
 ```sh
-go test -tags integration github.com\emanoelxavier\openid2go\openid -issuer=[issuer] -clientID=[clientID] -idToken=[idToken]
+go test -tags integration github.com/emanoelxavier/openid2go/openid -issuer=[issuer] -clientID=[clientID] -idToken=[idToken]
 ```
 
 Replace [issuer], [clientID] and [idToken] with the information from an identity provider of your choice. 
@@ -76,7 +76,7 @@ For a quick spin you can use it with tokens issued by Google for the [Google OAu
 
 
 ```sh
-go test -tags integration github.com\emanoelxavier\openid2go\openid -issuer=https://accounts.google.com -clientID=407408718192.apps.googleusercontent.com -idToken=copiedIDToken
+go test -tags integration github.com/emanoelxavier/openid2go/openid -issuer=https://accounts.google.com -clientID=407408718192.apps.googleusercontent.com -idToken=copiedIDToken
 ```
 
 ## Contributing
