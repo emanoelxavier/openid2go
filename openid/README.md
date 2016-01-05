@@ -17,7 +17,10 @@ This example demonstrates how to use this package to validate incoming ID Tokens
 
 ```go
 import (
-    "github.com/emanoelxavier/openid2go/openid"
+	"fmt"
+	"net/http"
+
+	"github.com/emanoelxavier/openid2go/openid"
 )
 
 func AuthenticatedHandler(w http.ResponseWriter, r *http.Request) {
