@@ -59,18 +59,24 @@ This example is also available in the documentation of this package, for more de
 ## Tests
 
 #### Unit Tests
+```sh
 go test github.com/emanoelxavier/openid2go/openid
+```
 
 #### Integration Tests
 In addition to to unit tests, this package also comes with integration tests that will validate real ID Tokens issued by real OIDC providers. The following command will run those tests:
 
+```sh
 go test -tags integration github.com/emanoelxavier/openid2go/openid -issuer=[issuer] -clientID=[clientID] -idToken=[idToken]
+```
 
 Replace [issuer], [clientID] and [idToken] with the information from an identity provider of your choice. 
 
 For a quick spin you can use it with tokens issued by Google for the [Google OAuth PlayGround](https://developers.google.com/oauthplayground) entering "openid" (without quotes) within the scope field and copying the issued ID Token. For this provider and client the values will be:
 
+```sh
 go test -tags integration github.com/emanoelxavier/openid2go/openid -issuer=https://accounts.google.com -clientID=407408718192.apps.googleusercontent.com -idToken=copiedIDToken
+```
 
 ## Contributing
 
