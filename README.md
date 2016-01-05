@@ -10,14 +10,16 @@ A Go package that implements web service middlewares for authenticating identiti
 
 ## Installation
 
+```sh
 go get github.com/emanoelxavier/openid2go/openid
+```
 
 ## Example
 This example demonstrates how to use this package to validate incoming ID Tokens. It initializes the Configuration with the desired providers (OPs) and registers two middlewares: openid.Authenticate and openid.AuthenticateUser. The former performs the token validation while the latter, in addition to that, will forward the user information to the next handler.
 
 ```go
 import (
-    "github.com/cosn/firebase"
+    "github.com/emanoelxavier/openid2go/openid"
 )
 
 func AuthenticatedHandler(w http.ResponseWriter, r *http.Request) {
@@ -55,18 +57,27 @@ This example is also available in the documentation of this package, for more de
 ## Tests
 
 #### Unit Tests
+
+```sh
 go test github.com/emanoelxavier/openid2go/openid
+```
 
 #### Integration Tests
 In addition to to unit tests, this package also comes with integration tests that will validate real ID Tokens issued by real OIDC providers. The following command will run those tests:
 
+
+```sh
 go test -tags integration github.com\emanoelxavier\openid2go\openid -issuer=[issuer] -clientID=[clientID] -idToken=[idToken]
+```
 
 Replace [issuer], [clientID] and [idToken] with the information from an identity provider of your choice. 
 
 For a quick spin you can use it with tokens issued by Google for the [Google OAuth PlayGround](https://developers.google.com/oauthplayground) entering "openid" (without quotes) within the scope field and copying the issued ID Token. For this provider and client the values will be:
 
+
+```sh
 go test -tags integration github.com\emanoelxavier\openid2go\openid -issuer=https://accounts.google.com -clientID=407408718192.apps.googleusercontent.com -idToken=copiedIDToken
+```
 
 ## Contributing
 
