@@ -58,6 +58,8 @@ func myGetProviders() ([]openid.Provider, error) {
 ```
 This example is also available in the documentation of this package, for more details see [GoDoc](https://godoc.org/github.com/emanoelxavier/openid2go/openid).
 
+An additional example using [Alice](https://github.com/justinas/alice) can be found at [Alice Example](https://github.com/emanoelxavier/openid2go/tree/master/alice-example)
+
 ## Tests
 
 #### Unit Tests
