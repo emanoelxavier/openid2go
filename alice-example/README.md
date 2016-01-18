@@ -1,7 +1,7 @@
 Go OpenId - Alice Example
 ===========
 [![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/emanoelxavier/openid2go/openid)
-[![license](http://img.shields.io/badge/license-MIT-yellowgreen.svg?style=flat)](https://raw.githubusercontent.com/emanoelxavier/openid2go/alice-example/LICENSE)
+[![license](http://img.shields.io/badge/license-MIT-yellowgreen.svg?style=flat)](https://raw.githubusercontent.com/emanoelxavier/openid2go/master/alice-example/LICENSE)
 
 This fully working example implements an HTTP server chaining openid Authentication middlewares with various other middlewares using [Alice](https://github.com/justinas/alice).
 
