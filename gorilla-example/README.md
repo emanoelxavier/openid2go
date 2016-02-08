@@ -1,86 +1,51 @@
-Go OpenId
+Go OpenId - Gorilla Example
 ===========
 [![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/emanoelxavier/openid2go/openid)
-[![license](http://img.shields.io/badge/license-MIT-yellowgreen.svg?style=flat)](https://raw.githubusercontent.com/emanoelxavier/openid2go/master/openid/LICENSE)
-## Summary
+[![license](http://img.shields.io/badge/license-MIT-yellowgreen.svg?style=flat)](https://raw.githubusercontent.com/emanoelxavier/openid2go/master/gorilla-example/LICENSE)
 
-A Go package that implements web service middlewares for authenticating identities represented by OpenID Connect (OIDC) ID Tokens.
+This fully working example implements an HTTP server using openid Authentication middlewares and [Gorilla Context](http://www.gorillatoolkit.org/pkg/context) to preserve the user information accross the service application stack.
 
-"OpenID Connect 1.0 is a simple identity layer on top of the OAuth 2.0 protocol. It enables Clients to verify the identity of the End-User based on the authentication performed by an Authorization Server"  - [OpenID Connect](http://openid.net/specs/openid-connect-core-1_0.html)
 
-## Installation
+The AuthenticateUser middleware exported by the package openid2go/openid forwards the user information to a handler that implements the interface openid.UserHandler:
 
-go get github.com/emanoelxavier/openid2go/openid
-
-## Example
-This example demonstrates how to use this package to validate incoming ID Tokens. It initializes the Configuration with the desired providers (OPs) and registers two middlewares: openid.Authenticate and openid.AuthenticateUser. The former performs the token validation while the latter, in addition to that, will forward the user information to the next handler.
 
 ```go
-import (
-	"fmt"
-	"net/http"
+func AuthenticateUser(conf *Configuration, h UserHandler) http.Handler
+```
 
-	"github.com/emanoelxavier/openid2go/openid"
-)
-
-func AuthenticatedHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "The user was authenticated!")
-}
-
-func AuthenticatedHandlerWithUser(u *openid.User, w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "The user was authenticated! The token was issued by %v and the user is %+v.", u.Issuer, u)
-}
-
-func Example() {
-	configuration, err := openid.NewConfiguration(openid.ProvidersGetter(getProviders_googlePlayground))
-
-	if err != nil {
-		panic(err)
-	}
-	
-	http.Handle("/user", openid.AuthenticateUser(configuration, openid.UserHandlerFunc(AuthenticatedHandlerWithUser)))
-	http.Handle("/authn", openid.Authenticate(configuration, http.HandlerFunc(AuthenticatedHandler)))
-	
-	http.ListenAndServe(":5100", nil)
-}
-
-func myGetProviders() ([]openid.Provider, error) {
-	provider, err := openid.NewProvider("https://providerissuer", []string{"myClientID"})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return []openid.Provider{provider}, nil
+```go
+type UserHandler interface {
+	ServeHTTPWithUser(*User, http.ResponseWriter, *http.Request)
 }
 ```
-This example is also available in the documentation of this package, for more details see [GoDoc](https://godoc.org/github.com/emanoelxavier/openid2go/openid).
 
-## Tests
+This example demonstrates how to create an adapter that implements that interface and use it to store the openid.User into a Gorilla Context. The user information can then be retrieved from the context in another point of the application stack.
 
-#### Unit Tests
+## Test
+
+Download and build:
 ```sh
-go test github.com/emanoelxavier/openid2go/openid
+go get github.com/emanoelxavier/openid2go/gorilla-example
 ```
-
-#### Integration Tests
-In addition to to unit tests, this package also comes with integration tests that will validate real ID Tokens issued by real OIDC providers. The following command will run those tests:
-
 ```sh
-go test -tags integration github.com/emanoelxavier/openid2go/openid -issuer=[issuer] -clientID=[clientID] -idToken=[idToken]
+go build github.com/emanoelxavier/openid2go/gorilla-example
 ```
 
-Replace [issuer], [clientID] and [idToken] with the information from an identity provider of your choice. 
-
-For a quick spin you can use it with tokens issued by Google for the [Google OAuth PlayGround](https://developers.google.com/oauthplayground) entering "openid" (without quotes) within the scope field and copying the issued ID Token. For this provider and client the values will be:
-
+Run:
 ```sh
-go test -tags integration github.com/emanoelxavier/openid2go/openid -issuer=https://accounts.google.com -clientID=407408718192.apps.googleusercontent.com -idToken=copiedIDToken
+github.com\emanoelxavier\openid2go\alice-example\gorilla-example.exe
 ```
 
-## Contributing
-
-1. Open an issue if found a bug or have a functional request.
-2. Disccuss.
-3. Branch off, write the fix with test(s) and commit attaching to the issue.
-4. Make a pull request.
+Once running you can send requests like the ones below:
+```sh
+GET http://localhost:5100
+```
+```sh
+GET http://localhost:5100/me
+Authorization: Bearer eyJhbGciOiJS...
+````
+```sh
+GET http://localhost:5100/authn
+Authorization: Bearer eyJhbGciOiJS...
+```
+The abbreviated token above must be replaced with the IDToken acquired from the [Google OAuth PlayGround](https://developers.google.com/oauthplayground) entering "openid" (without quotes) within the scope field.
