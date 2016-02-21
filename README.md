@@ -47,7 +47,7 @@ func Example() {
 }
 
 func myGetProviders() ([]openid.Provider, error) {
-	provider, err := openid.NewProvider("https://providerissuer", []string{"myClientID"})
+	provider, err := openid.NewProvider("https://providerissuer", openid.ListCond([]string{"myClientID"}))
 
 	if err != nil {
 		return nil, err

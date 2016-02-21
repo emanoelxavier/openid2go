@@ -19,14 +19,8 @@ func Test_validateProvider_EmptyIssuer(t *testing.T) {
 	expectSetupError(t, se, SetupErrorInvalidIssuer)
 }
 
-func Test_validateProvider_EmptyClientIDs(t *testing.T) {
-	p := Provider{Issuer: "https://test"}
-	se := p.validate()
-	expectSetupError(t, se, SetupErrorInvalidClientIDs)
-}
-
 func Test_validateProvider_ValidProvider(t *testing.T) {
-	p := Provider{Issuer: "https://test", ClientIDs: []string{"clientID"}}
+	p := Provider{Issuer: "https://test", ClientCondition: ListCond([]string{"clientID"})}
 	se := p.validate()
 
 	if se != nil {
@@ -35,7 +29,7 @@ func Test_validateProvider_ValidProvider(t *testing.T) {
 }
 
 func Test_validateProviders_OneInvalidProvider(t *testing.T) {
-	p := Provider{Issuer: "https://test", ClientIDs: []string{"clientID"}}
+	p := Provider{Issuer: "https://test", ClientCondition: ListCond([]string{"clientID"})}
 	ps := []Provider{p, Provider{}}
 
 	se := providers(ps).validate()
@@ -43,7 +37,7 @@ func Test_validateProviders_OneInvalidProvider(t *testing.T) {
 }
 
 func Test_validateProviders_AllValidProviders(t *testing.T) {
-	p := Provider{Issuer: "https://test", ClientIDs: []string{"clientID"}}
+	p := Provider{Issuer: "https://test", ClientCondition: ListCond([]string{"clientID"})}
 	ps := []Provider{p, p}
 
 	se := providers(ps).validate()

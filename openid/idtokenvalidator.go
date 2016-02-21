@@ -140,25 +140,23 @@ func validateAudiences(jt *jwt.Token, p *Provider) (string, error) {
 		return "", err
 	}
 
-	for _, aud := range p.ClientIDs {
-		for _, audienceClaim := range audiencesClaim {
-			ta, ok := audienceClaim.(string)
-			if !ok {
-				fmt.Printf("aud type %T \n", audienceClaim)
-				return "", &ValidationError{Code: ValidationErrorInvalidAudienceType, Message: fmt.Sprintf("Invalid Audiences type: %T", audiencesClaim), HTTPStatus: http.StatusUnauthorized}
-			}
+	for _, audienceClaim := range audiencesClaim {
+		ta, ok := audienceClaim.(string)
+		if !ok {
+			fmt.Printf("aud type %T \n", audienceClaim)
+			return "", &ValidationError{Code: ValidationErrorInvalidAudienceType, Message: fmt.Sprintf("Invalid Audiences type: %T", audiencesClaim), HTTPStatus: http.StatusUnauthorized}
+		}
 
-			if ta == "" {
-				return "", &ValidationError{Code: ValidationErrorInvalidAudience, Message: "The token 'aud' claim was not found or was empty.", HTTPStatus: http.StatusUnauthorized}
-			}
+		if ta == "" {
+			return "", &ValidationError{Code: ValidationErrorInvalidAudience, Message: "The token 'aud' claim was not found or was empty.", HTTPStatus: http.StatusUnauthorized}
+		}
 
-			if ta == aud {
-				return ta, nil
-			}
+		if p.ClientCondition(ta) {
+			return ta, nil
 		}
 	}
 
-	return "", &ValidationError{Code: ValidationErrorAudienceNotFound, Message: fmt.Sprintf("The provider %v does not have a client id matching any of the token audiences %+v", p.Issuer, audiencesClaim), HTTPStatus: http.StatusUnauthorized}
+	return "", &ValidationError{Code: ValidationErrorAudienceNotFound, Message: fmt.Sprintf("The provider %v does not have a client id satisfies condition (%+v)", p.Issuer, audiencesClaim), HTTPStatus: http.StatusUnauthorized}
 }
 
 func getAudiences(t *jwt.Token) ([]interface{}, error) {

@@ -14,7 +14,6 @@ type SetupErrorCode uint32
 // Setup error constants.
 const (
 	SetupErrorInvalidIssuer           SetupErrorCode = iota // Invalid issuer provided during setup.
-	SetupErrorInvalidClientIDs                              // Invalid client id collection provided during setup.
 	SetupErrorEmptyProviderCollection                       // Empty collection of providers provided during setup.
 )
 

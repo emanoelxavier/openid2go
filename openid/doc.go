@@ -55,12 +55,12 @@ its OIDC metadata (https://openid.net/specs/openid-connect-discovery-1_0.html#Pr
 The token's issuer and audiences will be verified using a collection of the type Provider. This
 collection is retrieved by calling the implementation of the function GetProvidersFunc registered with
 the Configuration.
-If the token issuer matches the Issuer of any of the providers and the token audience matches at least
-one of the ClientIDs of the respective provider then the token is considered valid.
+If the token issuer matches the Issuer of any of the providers and the token audience satisfies condition
+of the respective provider then the token is considered valid.
 
  func myGetProviders() ([]openid.Provider, error) {
      p, err := openid.NewProvider("https://accounts.google.com",
-                                  []string{"407408718192.apps.googleusercontent.com"})
+                                  openid.ListCond([]string{"407408718192.apps.googleusercontent.com"}))
      // ....
      return []openid.Provider{p}, nil
  }

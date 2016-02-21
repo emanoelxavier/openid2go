@@ -58,7 +58,7 @@ func Test_getSigningKey_UsingTokenWithInvalidIssuerType(t *testing.T) {
 	pm, _, _, tv := createIDTokenValidator(t)
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientCondition: ListCond([]string{"client"})}}, nil)
 		pm.close()
 	}()
 
@@ -78,8 +78,8 @@ func Test_getSigningKey_UsingTokenWithEmptyIssuer(t *testing.T) {
 	pm, _, _, tv := createIDTokenValidator(t)
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client"}}}, nil)
-		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientCondition: ListCond([]string{"client"})}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientCondition: ListCond([]string{"client"})}}, nil)
 
 		pm.close()
 	}()
@@ -112,7 +112,7 @@ func Test_getSigningKey_UsingTokenWithUnknownIssuer(t *testing.T) {
 	pm, _, _, tv := createIDTokenValidator(t)
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientCondition: ListCond([]string{"client"})}}, nil)
 		pm.close()
 	}()
 
@@ -134,7 +134,7 @@ func Test_getSigningKey_UsingTokenWithInvalidAudienceType(t *testing.T) {
 	pm, _, _, tv := createIDTokenValidator(t)
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientCondition: ListCond([]string{"client"})}}, nil)
 		pm.close()
 	}()
 
@@ -156,8 +156,8 @@ func Test_getSigningKey_UsingTokenWithInvalidAudience(t *testing.T) {
 	pm, _, _, tv := createIDTokenValidator(t)
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client"}}}, nil)
-		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientCondition: ListCond([]string{"client"})}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientCondition: ListCond([]string{"client"})}}, nil)
 		pm.close()
 	}()
 
@@ -190,7 +190,7 @@ func Test_getSigningKey_UsingTokenWithUnknownAudience(t *testing.T) {
 	pm, _, _, tv := createIDTokenValidator(t)
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client1", "client2"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientCondition: ListCond([]string{"client1", "client2"})}}, nil)
 		pm.close()
 	}()
 
@@ -212,7 +212,7 @@ func Test_getSigningKey_UsingTokenWithUnknownMultipleAudiences(t *testing.T) {
 	pm, _, _, tv := createIDTokenValidator(t)
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client1", "client2"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientCondition: ListCond([]string{"client1", "client2"})}}, nil)
 		pm.close()
 	}()
 
@@ -234,7 +234,7 @@ func Test_getSigningKey_UsingTokenWithInvalidSubjectType(t *testing.T) {
 	pm, _, _, tv := createIDTokenValidator(t)
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientIDs: []string{"client"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: "https://issuer", ClientCondition: ListCond([]string{"client"})}}, nil)
 		pm.close()
 	}()
 
@@ -260,7 +260,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterReturnsError(t *test
 	ee := &ValidationError{Code: ValidationErrorIssuerNotFound, HTTPStatus: http.StatusUnauthorized}
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: iss, ClientCondition: ListCond([]string{"client"})}}, nil)
 		sm.assertGetSigningKey(iss, keyID, nil, ee)
 		pm.close()
 		sm.close()
@@ -287,7 +287,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.
 	esk := "signingKey"
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: iss, ClientCondition: ListCond([]string{"client"})}}, nil)
 		sm.assertGetSigningKey(iss, keyID, []byte(esk), nil)
 		pm.close()
 		sm.close()
@@ -319,7 +319,7 @@ func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
 	esk := "signingKey"
 
 	go func() {
-		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
+		pm.assertGetProviders([]Provider{{Issuer: iss, ClientCondition: ListCond([]string{"client"})}}, nil)
 		sm.assertGetSigningKey(iss, keyID, []byte(esk), nil)
 		pm.close()
 		sm.close()

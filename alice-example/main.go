@@ -75,7 +75,7 @@ func main() {
 // On this example Google OP is the provider of choice and the client ID used corresponds
 // to the Google OAUTH Playground https://developers.google.com/oauthplayground
 func getProviders_googlePlayground() ([]openid.Provider, error) {
-	provider, err := openid.NewProvider("https://accounts.google.com", []string{"407408718192.apps.googleusercontent.com"})
+	provider, err := openid.NewProvider("https://accounts.google.com", openid.ListCond([]string{"407408718192.apps.googleusercontent.com"}))
 
 	if err != nil {
 		return nil, err
