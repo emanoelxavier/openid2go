@@ -137,7 +137,7 @@ func Test_AuthenticateUser_ValidIDToken(t *testing.T) {
 
 // getProviders is used as the GetProvidersFunc when creating a new openid.Configuration.
 func getProviders() ([]openid.Provider, error) {
-	return []openid.Provider{{Issuer: *issuer, ClientIDs: []string{*clientID}}}, nil
+	return []openid.Provider{{Issuer: *issuer, ClientCondition: openid.ListCond([]string{*clientID})}}, nil
 }
 
 func executeRequest(u string, r string, t string) (string, int, error) {

@@ -7,19 +7,18 @@ package openid
 // The Issuer uniquely identifies an OP. This field will be used
 // to validate the 'iss' claim present in the ID Token.
 //
-// The CliendIDs contains the list of client IDs registered with the OP that are meant to be accepted by the service using this package.
-// These values are used to validate the 'aud' clain present in the ID Token.
+// The ClientCondition validates the 'aud' clain present in the ID Token.
 type Provider struct {
-	Issuer    string
-	ClientIDs []string
+	Issuer          string
+	ClientCondition func(string) bool
 }
 
 // providers represent a collection of OPs.
 type providers []Provider
 
-// NewProvider returns a new instance of a Provider created with the given issuer and clientIDs.
-func NewProvider(issuer string, clientIDs []string) (Provider, error) {
-	p := Provider{issuer, clientIDs}
+// NewProvider returns a new instance of a Provider created with the given issuer and clientCondition.
+func NewProvider(issuer string, clientCondition func(string) bool) (Provider, error) {
+	p := Provider{issuer, clientCondition}
 
 	if err := p.validate(); err != nil {
 		return Provider{}, err
@@ -54,10 +53,6 @@ func (p Provider) validate() error {
 		return err
 	}
 
-	if err := validateProviderClientIDs(p.ClientIDs); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -70,10 +65,21 @@ func validateProviderIssuer(iss string) error {
 	return nil
 }
 
-func validateProviderClientIDs(cIDs []string) error {
-	if len(cIDs) == 0 {
-		return &SetupError{Code: SetupErrorInvalidClientIDs, Message: "At leat one client id must be provided."}
+// ListCond returns function that can be used as ClientCondition in Provider
+func ListCond(clientIDs []string) func(string) bool {
+	return func(ta string) bool {
+		for _, v := range clientIDs {
+			if ta == v {
+				return true
+			}
+		}
+		return false
 	}
+}
 
-	return nil
+// AnyCond marks any token as valid
+func AnyCond() func(string) bool {
+	return func(ta string) bool {
+		return true
+	}
 }
