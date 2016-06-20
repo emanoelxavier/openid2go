@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dgrijalva/jwt-go"
+	"gopkg.in/dgrijalva/jwt-go.v2"
 )
 
 const issuerClaimName = "iss"
