@@ -93,7 +93,6 @@ func (ve ValidationError) Error() string {
 func jwtErrorToOpenIdError(e error) *ValidationError {
 	if jwtError, ok := e.(*jwt.ValidationError); ok {
 		if (jwtError.Errors & (jwt.ValidationErrorNotValidYet | jwt.ValidationErrorExpired | jwt.ValidationErrorSignatureInvalid)) != 0 {
-			fmt.Println(jwtError.Errors)
 			return &ValidationError{Code: ValidationErrorJwtValidationFailure, Message: "Jwt token validation failed.", HTTPStatus: http.StatusUnauthorized}
 		}
 
