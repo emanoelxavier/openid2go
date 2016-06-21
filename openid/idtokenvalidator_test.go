@@ -62,8 +62,8 @@ func Test_getSigningKey_UsingTokenWithInvalidIssuerType(t *testing.T) {
 		pm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{})}
-	jt.Claims["iss"] = 0 // The expected issuer type is string, not int.
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{}))}
+	jt.Claims.(jwt.MapClaims)["iss"] = 0 // The expected issuer type is string, not int.
 	sk, err := tv.getSigningKey(jt)
 
 	if sk != nil {
@@ -84,7 +84,7 @@ func Test_getSigningKey_UsingTokenWithEmptyIssuer(t *testing.T) {
 		pm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{})}
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{}))}
 
 	// The token has no 'iss' claim
 	sk, err := tv.getSigningKey(jt)
@@ -96,7 +96,7 @@ func Test_getSigningKey_UsingTokenWithEmptyIssuer(t *testing.T) {
 	expectValidationError(t, err, ValidationErrorInvalidIssuerType, http.StatusUnauthorized, nil)
 
 	// The token has '' as 'iss' claim
-	jt.Claims["iss"] = ""
+	jt.Claims.(jwt.MapClaims)["iss"] = ""
 	sk, err = tv.getSigningKey(jt)
 
 	if sk != nil {
@@ -116,8 +116,8 @@ func Test_getSigningKey_UsingTokenWithUnknownIssuer(t *testing.T) {
 		pm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{})}
-	jt.Claims["iss"] = "http://unknown"
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{}))}
+	jt.Claims.(jwt.MapClaims)["iss"] = "http://unknown"
 
 	// The token has no 'iss' claim
 	sk, err := tv.getSigningKey(jt)
@@ -138,9 +138,9 @@ func Test_getSigningKey_UsingTokenWithInvalidAudienceType(t *testing.T) {
 		pm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{})}
-	jt.Claims["iss"] = "https://issuer"
-	jt.Claims["aud"] = 0 // Expected 'aud' type is string
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{}))}
+	jt.Claims.(jwt.MapClaims)["iss"] = "https://issuer"
+	jt.Claims.(jwt.MapClaims)["aud"] = 0 // Expected 'aud' type is string
 
 	sk, err := tv.getSigningKey(jt)
 
@@ -161,8 +161,8 @@ func Test_getSigningKey_UsingTokenWithInvalidAudience(t *testing.T) {
 		pm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{})}
-	jt.Claims["iss"] = "https://issuer"
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{}))}
+	jt.Claims.(jwt.MapClaims)["iss"] = "https://issuer"
 
 	// No audience claim
 	sk, err := tv.getSigningKey(jt)
@@ -174,7 +174,7 @@ func Test_getSigningKey_UsingTokenWithInvalidAudience(t *testing.T) {
 	expectValidationError(t, err, ValidationErrorInvalidAudienceType, http.StatusUnauthorized, nil)
 
 	// Empty audience claim.
-	jt.Claims["aud"] = ""
+	jt.Claims.(jwt.MapClaims)["aud"] = ""
 	sk, err = tv.getSigningKey(jt)
 
 	if sk != nil {
@@ -194,9 +194,9 @@ func Test_getSigningKey_UsingTokenWithUnknownAudience(t *testing.T) {
 		pm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{})}
-	jt.Claims["iss"] = "https://issuer"
-	jt.Claims["aud"] = "client3" // unknown audience
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{}))}
+	jt.Claims.(jwt.MapClaims)["iss"] = "https://issuer"
+	jt.Claims.(jwt.MapClaims)["aud"] = "client3" // unknown audience
 
 	sk, err := tv.getSigningKey(jt)
 
@@ -216,9 +216,9 @@ func Test_getSigningKey_UsingTokenWithUnknownMultipleAudiences(t *testing.T) {
 		pm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{})}
-	jt.Claims["iss"] = "https://issuer"
-	jt.Claims["aud"] = []interface{}{"client3", "client4"} // unknown audiences
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{}))}
+	jt.Claims.(jwt.MapClaims)["iss"] = "https://issuer"
+	jt.Claims.(jwt.MapClaims)["aud"] = []interface{}{"client3", "client4"} // unknown audiences
 
 	sk, err := tv.getSigningKey(jt)
 
@@ -238,10 +238,10 @@ func Test_getSigningKey_UsingTokenWithInvalidSubjectType(t *testing.T) {
 		pm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{})}
-	jt.Claims["iss"] = "https://issuer"
-	jt.Claims["aud"] = "client"
-	jt.Claims["sub"] = 0 // The expected 'sub' claim type is string
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{}))}
+	jt.Claims.(jwt.MapClaims)["iss"] = "https://issuer"
+	jt.Claims.(jwt.MapClaims)["aud"] = "client"
+	jt.Claims.(jwt.MapClaims)["sub"] = 0 // The expected 'sub' claim type is string
 	sk, err := tv.getSigningKey(jt)
 
 	if sk != nil {
@@ -266,10 +266,10 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterReturnsError(t *test
 		sm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
-	jt.Claims["iss"] = iss
-	jt.Claims["aud"] = "client"
-	jt.Claims["sub"] = "subject1"
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{})), Header: make(map[string]interface{})}
+	jt.Claims.(jwt.MapClaims)["iss"] = iss
+	jt.Claims.(jwt.MapClaims)["aud"] = "client"
+	jt.Claims.(jwt.MapClaims)["sub"] = "subject1"
 	jt.Header["kid"] = keyID
 
 	_, err := tv.getSigningKey(jt)
@@ -293,10 +293,10 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.
 		sm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
-	jt.Claims["iss"] = iss
-	jt.Claims["aud"] = "client"
-	jt.Claims["sub"] = "subject1"
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{})), Header: make(map[string]interface{})}
+	jt.Claims.(jwt.MapClaims)["iss"] = iss
+	jt.Claims.(jwt.MapClaims)["aud"] = "client"
+	jt.Claims.(jwt.MapClaims)["sub"] = "subject1"
 	jt.Header["kid"] = keyID
 
 	rsk, err := tv.getSigningKey(jt)
@@ -325,10 +325,10 @@ func Test_getSigningKey_UsingValidToken_WithoutKeyIdentifier_WhenSigningKeyGette
 		sm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
-	jt.Claims["iss"] = iss
-	jt.Claims["aud"] = "client"
-	jt.Claims["sub"] = "subject1"
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{})), Header: make(map[string]interface{})}
+	jt.Claims.(jwt.MapClaims)["iss"] = iss
+	jt.Claims.(jwt.MapClaims)["aud"] = "client"
+	jt.Claims.(jwt.MapClaims)["sub"] = "subject1"
 
 	rsk, err := tv.getSigningKey(jt)
 
@@ -356,10 +356,10 @@ func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
 		sm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
-	jt.Claims["iss"] = iss
-	jt.Claims["aud"] = []interface{}{"unknown", "client"}
-	jt.Claims["sub"] = "subject1"
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{})), Header: make(map[string]interface{})}
+	jt.Claims.(jwt.MapClaims)["iss"] = iss
+	jt.Claims.(jwt.MapClaims)["aud"] = []interface{}{"unknown", "client"}
+	jt.Claims.(jwt.MapClaims)["sub"] = "subject1"
 	jt.Header["kid"] = keyID
 
 	rsk, err := tv.getSigningKey(jt)
@@ -383,8 +383,8 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenFlushCachedSigningKeysReturn
 		sm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
-	jt.Claims["iss"] = ""
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{})), Header: make(map[string]interface{})}
+	jt.Claims.(jwt.MapClaims)["iss"] = ""
 
 	_, err := tv.renewAndGetSigningKey(jt)
 
@@ -403,8 +403,8 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeyReturnsError(t 
 		sm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
-	jt.Claims["iss"] = ""
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{})), Header: make(map[string]interface{})}
+	jt.Claims.(jwt.MapClaims)["iss"] = ""
 	jt.Header["kid"] = ""
 
 	_, err := tv.renewAndGetSigningKey(jt)
@@ -424,8 +424,8 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeySucceeds(t *tes
 		sm.close()
 	}()
 
-	jt := &jwt.Token{Claims: make(map[string]interface{}), Header: make(map[string]interface{})}
-	jt.Claims["iss"] = ""
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{})), Header: make(map[string]interface{})}
+	jt.Claims.(jwt.MapClaims)["iss"] = ""
 	jt.Header["kid"] = ""
 
 	rsk, err := tv.renewAndGetSigningKey(jt)
