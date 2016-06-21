@@ -49,7 +49,7 @@ func (tv *idTokenValidator) validate(t string) (*jwt.Token, error) {
 
 func (tv *idTokenValidator) renewAndGetSigningKey(jt *jwt.Token) (interface{}, error) {
 	// Issuer is already validated when 'getSigningKey was called.
-	iss := jt.Claims[issuerClaimName].(string)
+	iss := jt.Claims.(jwt.MapClaims)[issuerClaimName].(string)
 
 	err := tv.keyGetter.flushCachedSigningKeys(iss)
 
@@ -162,7 +162,7 @@ func validateAudiences(jt *jwt.Token, p *Provider) (string, error) {
 }
 
 func getAudiences(t *jwt.Token) ([]interface{}, error) {
-	audiencesClaim := t.Claims[audiencesClaimName]
+	audiencesClaim := t.Claims.(jwt.MapClaims)[audiencesClaimName]
 	if aud, ok := audiencesClaim.(string); ok {
 		return []interface{}{aud}, nil
 	} else if _, ok := audiencesClaim.([]interface{}); ok {
@@ -174,9 +174,9 @@ func getAudiences(t *jwt.Token) ([]interface{}, error) {
 }
 
 func getIssuer(t *jwt.Token) interface{} {
-	return t.Claims[issuerClaimName]
+	return t.Claims.(jwt.MapClaims)[issuerClaimName]
 }
 
 func getSubject(t *jwt.Token) interface{} {
-	return t.Claims[subjectClaimName]
+	return t.Claims.(jwt.MapClaims)[subjectClaimName]
 }
