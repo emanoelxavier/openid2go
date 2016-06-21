@@ -84,7 +84,13 @@ func (tv *idTokenValidator) getSigningKey(jt *jwt.Token) (interface{}, error) {
 		return nil, err
 	}
 
-	return tv.keyGetter.getSigningKey(p.Issuer, jt.Header[keyIDJwtHeaderName].(string))
+	var kid string = ""
+
+	if jt.Header[keyIDJwtHeaderName] != nil {
+		kid = jt.Header[keyIDJwtHeaderName].(string)
+	}
+
+	return tv.keyGetter.getSigningKey(p.Issuer, kid)
 }
 
 func validateIssuer(jt *jwt.Token, ps []Provider) (*Provider, error) {
