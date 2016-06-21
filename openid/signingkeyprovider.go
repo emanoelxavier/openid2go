@@ -2,12 +2,13 @@ package openid
 
 import (
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"net/http"
 )
 
 type signingKeyGetter interface {
 	flushCachedSigningKeys(issuer string) error
-	getSigningKey(issuer string, kid string) ([]byte, error)
+	getSigningKey(issuer string, kid string) (interface{}, error)
 }
 
 type signingKeyProvider struct {
@@ -36,7 +37,7 @@ func (s *signingKeyProvider) refreshSigningKeys(issuer string) error {
 	return nil
 }
 
-func (s *signingKeyProvider) getSigningKey(issuer string, kid string) ([]byte, error) {
+func (s *signingKeyProvider) getSigningKey(issuer string, kid string) (interface{}, error) {
 	sk := findKey(s.jwksMap, issuer, kid)
 
 	if sk != nil {
@@ -55,7 +56,12 @@ func (s *signingKeyProvider) getSigningKey(issuer string, kid string) ([]byte, e
 		return nil, &ValidationError{Code: ValidationErrorKidNotFound, Message: fmt.Sprintf("The jwk set retrieved for the issuer %v does not contain a key identifier %v.", issuer, kid), HTTPStatus: http.StatusUnauthorized}
 	}
 
-	return sk, nil
+	parsed, pErr := jwt.ParseRSAPublicKeyFromPEM(sk)
+	if pErr != nil {
+		return sk, nil
+	}
+
+	return parsed, nil
 }
 
 func findKey(km map[string][]signingKey, issuer string, kid string) []byte {

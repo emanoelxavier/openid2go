@@ -29,7 +29,7 @@ type flushCachedSigningKeysResp struct {
 	err error
 }
 
-func (s *signingKeyGetterMock) getSigningKey(iss string, keyID string) ([]byte, error) {
+func (s *signingKeyGetterMock) getSigningKey(iss string, keyID string) (interface{}, error) {
 	s.Calls <- &getSigningKeyCall{iss, keyID}
 	sr := (<-s.Calls).(*getSigningKeyResp)
 	return sr.key, sr.err
