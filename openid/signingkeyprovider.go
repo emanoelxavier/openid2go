@@ -25,6 +25,8 @@ func newSigningKeyProvider(kg signingKeySetGetter) *signingKeyProvider {
 }
 
 func (s *signingKeyProvider) flushCachedSigningKeys(issuer string) error {
+	lock.Lock()
+	defer lock.Unlock()
 	delete(s.jwksMap, issuer)
 	return nil
 }
@@ -43,7 +45,9 @@ func (s *signingKeyProvider) refreshSigningKeys(issuer string) error {
 }
 
 func (s *signingKeyProvider) getSigningKey(issuer string, kid string) (interface{}, error) {
+	lock.RLock()
 	sk := findKey(s.jwksMap, issuer, kid)
+	lock.RUnlock()
 
 	if sk != nil {
 		return sk, nil
@@ -55,7 +59,9 @@ func (s *signingKeyProvider) getSigningKey(issuer string, kid string) (interface
 		return nil, err
 	}
 
+	lock.RLock()
 	sk = findKey(s.jwksMap, issuer, kid)
+	lock.RUnlock()
 
 	if sk == nil {
 		return nil, &ValidationError{Code: ValidationErrorKidNotFound, Message: fmt.Sprintf("The jwk set retrieved for the issuer %v does not contain a key identifier %v.", issuer, kid), HTTPStatus: http.StatusUnauthorized}
@@ -70,8 +76,7 @@ func (s *signingKeyProvider) getSigningKey(issuer string, kid string) (interface
 }
 
 func findKey(km map[string][]signingKey, issuer string, kid string) []byte {
-	lock.RLock()
-	defer lock.RUnlock()
+
 	if skSet, ok := km[issuer]; ok {
 		if kid == "" {
 			return skSet[0].key
