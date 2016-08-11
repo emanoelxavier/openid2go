@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"net/http"
+	"sync"
 )
+
+var lock = sync.RWMutex{}
 
 type signingKeyGetter interface {
 	flushCachedSigningKeys(issuer string) error
@@ -33,6 +36,8 @@ func (s *signingKeyProvider) refreshSigningKeys(issuer string) error {
 		return err
 	}
 
+	lock.Lock()
+	defer lock.Unlock()
 	s.jwksMap[issuer] = skeys
 	return nil
 }
@@ -65,6 +70,8 @@ func (s *signingKeyProvider) getSigningKey(issuer string, kid string) (interface
 }
 
 func findKey(km map[string][]signingKey, issuer string, kid string) []byte {
+	lock.RLock()
+	defer lock.RUnlock()
 	if skSet, ok := km[issuer]; ok {
 		if kid == "" {
 			return skSet[0].key
