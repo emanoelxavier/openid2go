@@ -25,6 +25,7 @@ func newSigningKeyProvider(kg signingKeySetGetter) *signingKeyProvider {
 }
 
 func (s *signingKeyProvider) flushCachedSigningKeys(issuer string) error {
+	fmt.Println("OIDC: Flush called")
 	lock.Lock()
 	defer lock.Unlock()
 	delete(s.jwksMap, issuer)
@@ -39,8 +40,8 @@ func (s *signingKeyProvider) refreshSigningKeys(issuer string) error {
 	}
 
 	lock.Lock()
-	defer lock.Unlock()
 	s.jwksMap[issuer] = skeys
+	lock.Unlock()
 	return nil
 }
 
@@ -50,7 +51,11 @@ func (s *signingKeyProvider) getSigningKey(issuer string, kid string) (interface
 	lock.RUnlock()
 
 	if sk != nil {
-		return sk, nil
+		parsed, pErr := jwt.ParseRSAPublicKeyFromPEM(sk)
+		if pErr != nil {
+			return sk, nil
+		}
+		return parsed, nil
 	}
 
 	err := s.refreshSigningKeys(issuer)

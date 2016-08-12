@@ -34,7 +34,7 @@ func (tv *idTokenValidator) validate(t string) (*jwt.Token, error) {
 		if verr, ok := err.(*jwt.ValidationError); ok {
 			// If the signing key did not match it may be because the in memory key is outdated.
 			// Renew the cached signing key.
-			if (verr.Errors & jwt.ValidationErrorSignatureInvalid) != 0 {
+			if verr.Errors == jwt.ValidationErrorSignatureInvalid {
 				jt, err = tv.jwtParser(t, tv.renewAndGetSigningKey)
 			}
 		}
