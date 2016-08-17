@@ -34,7 +34,7 @@ func (tv *idTokenValidator) validate(t string) (*jwt.Token, error) {
 		if verr, ok := err.(*jwt.ValidationError); ok {
 			// If the signing key did not match it may be because the in memory key is outdated.
 			// Renew the cached signing key.
-			if verr.Errors == jwt.ValidationErrorSignatureInvalid {
+			if (verr.Errors & jwt.ValidationErrorSignatureInvalid) != 0 {
 				jt, err = tv.jwtParser(t, tv.renewAndGetSigningKey)
 			}
 		}
@@ -57,7 +57,19 @@ func (tv *idTokenValidator) renewAndGetSigningKey(jt *jwt.Token) (interface{}, e
 		return nil, err
 	}
 
-	return tv.keyGetter.getSigningKey(iss, jt.Header[keyIDJwtHeaderName].(string))
+	headerVal, ok := jt.Header[keyIDJwtHeaderName]
+
+	if !ok {
+		return tv.keyGetter.getSigningKey(iss, "")
+	}
+
+	switch headerVal.(type) {
+	case string:
+		return tv.keyGetter.getSigningKey(iss, headerVal.(string))
+	default:
+		return tv.keyGetter.getSigningKey(iss, "")
+	}
+
 }
 
 func (tv *idTokenValidator) getSigningKey(jt *jwt.Token) (interface{}, error) {

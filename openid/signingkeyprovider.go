@@ -25,7 +25,6 @@ func newSigningKeyProvider(kg signingKeySetGetter) *signingKeyProvider {
 }
 
 func (s *signingKeyProvider) flushCachedSigningKeys(issuer string) error {
-	fmt.Println("OIDC: Flush called")
 	lock.Lock()
 	defer lock.Unlock()
 	delete(s.jwksMap, issuer)
