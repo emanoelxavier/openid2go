@@ -2,12 +2,16 @@ package openid
 
 import (
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"net/http"
+	"sync"
 )
+
+var lock = sync.RWMutex{}
 
 type signingKeyGetter interface {
 	flushCachedSigningKeys(issuer string) error
-	getSigningKey(issuer string, kid string) ([]byte, error)
+	getSigningKey(issuer string, kid string) (interface{}, error)
 }
 
 type signingKeyProvider struct {
@@ -21,6 +25,8 @@ func newSigningKeyProvider(kg signingKeySetGetter) *signingKeyProvider {
 }
 
 func (s *signingKeyProvider) flushCachedSigningKeys(issuer string) error {
+	lock.Lock()
+	defer lock.Unlock()
 	delete(s.jwksMap, issuer)
 	return nil
 }
@@ -32,15 +38,23 @@ func (s *signingKeyProvider) refreshSigningKeys(issuer string) error {
 		return err
 	}
 
+	lock.Lock()
 	s.jwksMap[issuer] = skeys
+	lock.Unlock()
 	return nil
 }
 
-func (s *signingKeyProvider) getSigningKey(issuer string, kid string) ([]byte, error) {
+func (s *signingKeyProvider) getSigningKey(issuer string, kid string) (interface{}, error) {
+	lock.RLock()
 	sk := findKey(s.jwksMap, issuer, kid)
+	lock.RUnlock()
 
 	if sk != nil {
-		return sk, nil
+		parsed, pErr := jwt.ParseRSAPublicKeyFromPEM(sk)
+		if pErr != nil {
+			return sk, nil
+		}
+		return parsed, nil
 	}
 
 	err := s.refreshSigningKeys(issuer)
@@ -49,16 +63,24 @@ func (s *signingKeyProvider) getSigningKey(issuer string, kid string) ([]byte, e
 		return nil, err
 	}
 
+	lock.RLock()
 	sk = findKey(s.jwksMap, issuer, kid)
+	lock.RUnlock()
 
 	if sk == nil {
 		return nil, &ValidationError{Code: ValidationErrorKidNotFound, Message: fmt.Sprintf("The jwk set retrieved for the issuer %v does not contain a key identifier %v.", issuer, kid), HTTPStatus: http.StatusUnauthorized}
 	}
 
-	return sk, nil
+	parsed, pErr := jwt.ParseRSAPublicKeyFromPEM(sk)
+	if pErr != nil {
+		return sk, nil
+	}
+
+	return parsed, nil
 }
 
 func findKey(km map[string][]signingKey, issuer string, kid string) []byte {
+
 	if skSet, ok := km[issuer]; ok {
 		if kid == "" {
 			return skSet[0].key

@@ -40,6 +40,6 @@ func newUser(t *jwt.Token) (*User, error) {
 	u := new(User)
 	u.Issuer = iss
 	u.ID = sub
-	u.Claims = t.Claims
+	u.Claims = t.Claims.(jwt.MapClaims)
 	return u, nil
 }

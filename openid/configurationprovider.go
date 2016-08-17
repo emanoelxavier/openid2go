@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 const wellKnownOpenIdConfiguration = "/.well-known/openid-configuration"
@@ -34,7 +35,8 @@ func (httpProv *httpConfigurationProvider) getConfiguration(issuer string) (conf
 	if issuer == "accounts.google.com" {
 		issuer = "https://" + issuer
 	}
-	configurationUri := issuer + wellKnownOpenIdConfiguration
+
+	configurationUri := strings.TrimSuffix(issuer, "/") + wellKnownOpenIdConfiguration
 	var config configuration
 	resp, err := httpProv.getConfig(configurationUri)
 	if err != nil {

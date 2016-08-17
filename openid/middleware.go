@@ -86,6 +86,11 @@ func AuthenticateUser(conf *Configuration, h UserHandler) http.Handler {
 	})
 }
 
+// Exported authenticate so we don't need to use the middleware
+func AuthenticateOIDWithUser(c *Configuration, rw http.ResponseWriter, req *http.Request) (*User, *jwt.Token, bool) {
+	return authenticateUserWithToken(c, rw, req)
+}
+
 func authenticate(c *Configuration, rw http.ResponseWriter, req *http.Request) (t *jwt.Token, halt bool) {
 	var tg GetIDTokenFunc
 	if c.idTokenGetter == nil {
@@ -139,4 +144,27 @@ func authenticateUser(c *Configuration, rw http.ResponseWriter, req *http.Reques
 	}
 
 	return u, false
+}
+
+func authenticateUserWithToken(c *Configuration, rw http.ResponseWriter, req *http.Request) (u *User, vt *jwt.Token, halt bool) {
+	var eh ErrorHandlerFunc
+	if c.errorHandler == nil {
+		eh = validationErrorToHTTPStatus
+	} else {
+		eh = c.errorHandler
+	}
+
+	if t, h := authenticate(c, rw, req); h {
+		return nil, nil, h
+	} else {
+		vt = t
+	}
+
+	u, err := newUser(vt)
+
+	if err != nil {
+		return nil, nil, eh(err, rw, req)
+	}
+
+	return u, vt, false
 }

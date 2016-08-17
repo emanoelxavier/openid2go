@@ -64,9 +64,9 @@ func Test_authenticateUser_WhenValidateSucceeds(t *testing.T) {
 	iss := "https://issuer"
 	sub := "SUB1"
 
-	jt := &jwt.Token{Claims: make(map[string]interface{})}
-	jt.Claims["iss"] = iss
-	jt.Claims["sub"] = sub
+	jt := &jwt.Token{Claims: jwt.MapClaims(make(map[string]interface{}))}
+	jt.Claims.(jwt.MapClaims)["iss"] = iss
+	jt.Claims.(jwt.MapClaims)["sub"] = sub
 
 	go func() {
 		vm.assertValidate(idToken, jt, nil)
@@ -91,8 +91,10 @@ func Test_authenticateUser_WhenValidateSucceeds(t *testing.T) {
 		t.Error("Expected user ID", sub, ", but got", u.ID)
 	}
 
-	if len(u.Claims) != len(jt.Claims) {
-		t.Error("Expected number of user claims", len(jt.Claims), ", but got", len(u.Claims))
+	thisC := u.Claims
+	thisJT := jt.Claims.(jwt.MapClaims)
+	if len(thisC) != len(thisJT) {
+		t.Error("Expected number of user claims", len(thisJT), ", but got", len(u.Claims))
 	}
 
 	vm.assertDone()
