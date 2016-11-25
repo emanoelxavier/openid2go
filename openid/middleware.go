@@ -12,18 +12,25 @@ type Configuration struct {
 	tokenValidator jwtTokenValidator
 	idTokenGetter  GetIDTokenFunc
 	errorHandler   ErrorHandlerFunc
+	httpGetter     httpGetFunc
 }
 
 type option func(*Configuration) error
+
+type httpGetFunc func(r *http.Request, url string) (*http.Response, error)
 
 // The NewConfiguration creates a new instance of Configuration and returns a pointer to it.
 // This function receives a collection of the function type option. Each of those functions are
 // responsible for setting some part of the returned *Configuration. If any if the option functions
 // returns an error then NewConfiguration will return a nil configuration and that error.
 func NewConfiguration(options ...option) (*Configuration, error) {
+	httpGet := func(r *http.Request, url string) (*http.Response, error) {
+		return http.Get(url)
+	}
+
 	m := new(Configuration)
-	cp := newHTTPConfigurationProvider(http.Get, jsonDecodeResponse)
-	jp := newHTTPJwksProvider(http.Get, jsonDecodeResponse)
+	cp := newHTTPConfigurationProvider(httpGet, jsonDecodeResponse)
+	jp := newHTTPJwksProvider(httpGet, jsonDecodeResponse)
 	ksp := newSigningKeySetProvider(cp, jp, pemEncodePublicKey)
 	kp := newSigningKeyProvider(ksp)
 	m.tokenValidator = newIDTokenValidator(nil, jwt.Parse, kp, jwt.ParseRSAPublicKeyFromPEM)
@@ -107,7 +114,7 @@ func authenticate(c *Configuration, rw http.ResponseWriter, req *http.Request) (
 		return nil, eh(err, rw, req)
 	}
 
-	vt, err := c.tokenValidator.validate(ts)
+	vt, err := c.tokenValidator.validate(req, ts)
 
 	if err != nil {
 		return nil, eh(err, rw, req)

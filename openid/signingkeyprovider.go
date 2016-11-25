@@ -7,7 +7,7 @@ import (
 
 type signingKeyGetter interface {
 	flushCachedSigningKeys(issuer string) error
-	getSigningKey(issuer string, kid string) ([]byte, error)
+	getSigningKey(r *http.Request, issuer string, kid string) ([]byte, error)
 }
 
 type signingKeyProvider struct {
@@ -25,8 +25,8 @@ func (s *signingKeyProvider) flushCachedSigningKeys(issuer string) error {
 	return nil
 }
 
-func (s *signingKeyProvider) refreshSigningKeys(issuer string) error {
-	skeys, err := s.keySetGetter.getSigningKeySet(issuer)
+func (s *signingKeyProvider) refreshSigningKeys(r *http.Request, issuer string) error {
+	skeys, err := s.keySetGetter.getSigningKeySet(r, issuer)
 
 	if err != nil {
 		return err
@@ -36,14 +36,14 @@ func (s *signingKeyProvider) refreshSigningKeys(issuer string) error {
 	return nil
 }
 
-func (s *signingKeyProvider) getSigningKey(issuer string, kid string) ([]byte, error) {
+func (s *signingKeyProvider) getSigningKey(r *http.Request, issuer string, kid string) ([]byte, error) {
 	sk := findKey(s.jwksMap, issuer, kid)
 
 	if sk != nil {
 		return sk, nil
 	}
 
-	err := s.refreshSigningKeys(issuer)
+	err := s.refreshSigningKeys(r, issuer)
 
 	if err != nil {
 		return nil, err
@@ -52,7 +52,11 @@ func (s *signingKeyProvider) getSigningKey(issuer string, kid string) ([]byte, e
 	sk = findKey(s.jwksMap, issuer, kid)
 
 	if sk == nil {
-		return nil, &ValidationError{Code: ValidationErrorKidNotFound, Message: fmt.Sprintf("The jwk set retrieved for the issuer %v does not contain a key identifier %v.", issuer, kid), HTTPStatus: http.StatusUnauthorized}
+		return nil, &ValidationError{
+			Code:       ValidationErrorKidNotFound,
+			Message:    fmt.Sprintf("The jwk set retrieved for the issuer %v does not contain a key identifier %v.", issuer, kid),
+			HTTPStatus: http.StatusUnauthorized,
+		}
 	}
 
 	return sk, nil

@@ -14,7 +14,7 @@ const subjectClaimName = "sub"
 const keyIDJwtHeaderName = "kid"
 
 type jwtTokenValidator interface {
-	validate(t string) (jt *jwt.Token, err error)
+	validate(r *http.Request, t string) (jt *jwt.Token, err error)
 }
 
 type jwtParserFunc func(string, jwt.Keyfunc) (*jwt.Token, error)
@@ -31,15 +31,19 @@ func newIDTokenValidator(pg GetProvidersFunc, jp jwtParserFunc, kg signingKeyGet
 	return &idTokenValidator{pg, jp, kg, kp}
 }
 
-func (tv *idTokenValidator) validate(t string) (*jwt.Token, error) {
-	jt, err := tv.jwtParser(t, tv.getSigningKey)
+func (tv *idTokenValidator) validate(r *http.Request, t string) (*jwt.Token, error) {
+	jt, err := tv.jwtParser(t, func(tok *jwt.Token) (interface{}, error) {
+		return tv.getSigningKey(r, tok)
+	})
 	if err != nil {
 
 		if verr, ok := err.(*jwt.ValidationError); ok {
 			// If the signing key did not match it may be because the in memory key is outdated.
 			// Renew the cached signing key.
 			if (verr.Errors & jwt.ValidationErrorSignatureInvalid) != 0 {
-				jt, err = tv.jwtParser(t, tv.renewAndGetSigningKey)
+				jt, err = tv.jwtParser(t, func(tok *jwt.Token) (interface{}, error) {
+					return tv.renewAndGetSigningKey(r, tok)
+				})
 			}
 		}
 	}
@@ -51,7 +55,7 @@ func (tv *idTokenValidator) validate(t string) (*jwt.Token, error) {
 	return jt, nil
 }
 
-func (tv *idTokenValidator) renewAndGetSigningKey(jt *jwt.Token) (interface{}, error) {
+func (tv *idTokenValidator) renewAndGetSigningKey(r *http.Request, jt *jwt.Token) (interface{}, error) {
 	// Issuer is already validated when 'getSigningKey was called.
 	iss := jt.Claims.(jwt.MapClaims)[issuerClaimName].(string)
 
@@ -61,14 +65,14 @@ func (tv *idTokenValidator) renewAndGetSigningKey(jt *jwt.Token) (interface{}, e
 		return nil, err
 	}
 	var key []byte
-	if key, err = tv.keyGetter.getSigningKey(iss, jt.Header[keyIDJwtHeaderName].(string)); err == nil {
+	if key, err = tv.keyGetter.getSigningKey(r, iss, jt.Header[keyIDJwtHeaderName].(string)); err == nil {
 		return tv.rsaParser(key)
 	}
 
 	return nil, err
 }
 
-func (tv *idTokenValidator) getSigningKey(jt *jwt.Token) (interface{}, error) {
+func (tv *idTokenValidator) getSigningKey(r *http.Request, jt *jwt.Token) (interface{}, error) {
 	provs, err := tv.provGetter()
 	if err != nil {
 		return nil, err
@@ -92,14 +96,14 @@ func (tv *idTokenValidator) getSigningKey(jt *jwt.Token) (interface{}, error) {
 		return nil, err
 	}
 
-	var kid string = ""
+	var kid string
 
 	if jt.Header[keyIDJwtHeaderName] != nil {
 		kid = jt.Header[keyIDJwtHeaderName].(string)
 	}
 
 	var key []byte
-	if key, err = tv.keyGetter.getSigningKey(p.Issuer, kid); err == nil {
+	if key, err = tv.keyGetter.getSigningKey(r, p.Issuer, kid); err == nil {
 		return tv.rsaParser(key)
 	}
 

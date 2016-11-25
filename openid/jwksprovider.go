@@ -8,7 +8,7 @@ import (
 )
 
 type jwksGetter interface {
-	getJwkSet(string) (jose.JsonWebKeySet, error)
+	getJwkSet(r *http.Request, url string) (jose.JsonWebKeySet, error)
 }
 
 type httpJwksProvider struct {
@@ -20,10 +20,10 @@ func newHTTPJwksProvider(gf httpGetFunc, df decodeResponseFunc) *httpJwksProvide
 	return &httpJwksProvider{gf, df}
 }
 
-func (httpProv *httpJwksProvider) getJwkSet(url string) (jose.JsonWebKeySet, error) {
+func (httpProv *httpJwksProvider) getJwkSet(r *http.Request, url string) (jose.JsonWebKeySet, error) {
 
 	var jwks jose.JsonWebKeySet
-	resp, err := httpProv.getJwks(url)
+	resp, err := httpProv.getJwks(r, url)
 
 	if err != nil {
 		return jwks, &ValidationError{Code: ValidationErrorGetJwksFailure, Message: fmt.Sprintf("Failure while contacting the jwk endpoint %v.", url), Err: err, HTTPStatus: http.StatusUnauthorized}

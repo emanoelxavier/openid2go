@@ -6,7 +6,7 @@ import (
 )
 
 type signingKeySetGetter interface {
-	getSigningKeySet(issuer string) ([]signingKey, error)
+	getSigningKeySet(r *http.Request, issuer string) ([]signingKey, error)
 }
 
 type signingKeySetProvider struct {
@@ -24,14 +24,14 @@ func newSigningKeySetProvider(cg configurationGetter, jg jwksGetter, ke pemEncod
 	return &signingKeySetProvider{cg, jg, ke}
 }
 
-func (signProv *signingKeySetProvider) getSigningKeySet(iss string) ([]signingKey, error) {
-	conf, err := signProv.configGetter.getConfiguration(iss)
+func (signProv *signingKeySetProvider) getSigningKeySet(r *http.Request, iss string) ([]signingKey, error) {
+	conf, err := signProv.configGetter.getConfiguration(r, iss)
 
 	if err != nil {
 		return nil, err
 	}
 
-	jwks, err := signProv.jwksGetter.getJwkSet(conf.JwksUri)
+	jwks, err := signProv.jwksGetter.getJwkSet(r, conf.JwksUri)
 
 	if err != nil {
 		return nil, err
