@@ -12,11 +12,11 @@ type jwksGetter interface {
 }
 
 type httpJwksProvider struct {
-	getJwks    httpGetFunc
+	getJwks    HTTPGetFunc
 	decodeJwks decodeResponseFunc
 }
 
-func newHTTPJwksProvider(gf httpGetFunc, df decodeResponseFunc) *httpJwksProvider {
+func newHTTPJwksProvider(gf HTTPGetFunc, df decodeResponseFunc) *httpJwksProvider {
 	return &httpJwksProvider{gf, df}
 }
 

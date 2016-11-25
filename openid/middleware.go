@@ -12,25 +12,18 @@ type Configuration struct {
 	tokenValidator jwtTokenValidator
 	idTokenGetter  GetIDTokenFunc
 	errorHandler   ErrorHandlerFunc
-	httpGetter     httpGetFunc
 }
 
 type option func(*Configuration) error
-
-type httpGetFunc func(r *http.Request, url string) (*http.Response, error)
 
 // The NewConfiguration creates a new instance of Configuration and returns a pointer to it.
 // This function receives a collection of the function type option. Each of those functions are
 // responsible for setting some part of the returned *Configuration. If any if the option functions
 // returns an error then NewConfiguration will return a nil configuration and that error.
 func NewConfiguration(options ...option) (*Configuration, error) {
-	httpGet := func(r *http.Request, url string) (*http.Response, error) {
-		return http.Get(url)
-	}
-
 	m := new(Configuration)
-	cp := newHTTPConfigurationProvider(httpGet, jsonDecodeResponse)
-	jp := newHTTPJwksProvider(httpGet, jsonDecodeResponse)
+	cp := newHTTPConfigurationProvider(defaultHTTPGet, jsonDecodeResponse)
+	jp := newHTTPJwksProvider(defaultHTTPGet, jsonDecodeResponse)
 	ksp := newSigningKeySetProvider(cp, jp, pemEncodePublicKey)
 	kp := newSigningKeyProvider(ksp)
 	m.tokenValidator = newIDTokenValidator(nil, jwt.Parse, kp, jwt.ParseRSAPublicKeyFromPEM)
@@ -61,6 +54,28 @@ func ProvidersGetter(pg GetProvidersFunc) func(*Configuration) error {
 func ErrorHandler(eh ErrorHandlerFunc) func(*Configuration) error {
 	return func(c *Configuration) error {
 		c.errorHandler = eh
+		return nil
+	}
+}
+
+// HTTPGetFunc is a function that gets a URL based on a contextual request
+// and a target URL. The default behavior is the http.Get method, ignoring
+// the request parameter.
+type HTTPGetFunc func(r *http.Request, url string) (*http.Response, error)
+
+var defaultHTTPGet = func(r *http.Request, url string) (*http.Response, error) {
+	return http.Get(url)
+}
+
+// The HTTPGetter option registers the function responsible for returning the
+// providers containing the valid issuer and client IDs used to validate the ID Token.
+func HTTPGetter(hg HTTPGetFunc) func(*Configuration) error {
+	return func(c *Configuration) error {
+		sksp := c.tokenValidator.(*idTokenValidator).
+			keyGetter.(*signingKeyProvider).
+			keySetGetter.(*signingKeySetProvider)
+		sksp.configGetter.(*httpConfigurationProvider).getConfig = hg
+		sksp.jwksGetter.(*httpJwksProvider).getJwks = hg
 		return nil
 	}
 }

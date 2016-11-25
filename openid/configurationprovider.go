@@ -16,11 +16,11 @@ type configurationGetter interface { // Getter
 }
 
 type httpConfigurationProvider struct { //configurationProvider
-	getConfig    httpGetFunc        //httpGetter
+	getConfig    HTTPGetFunc        //httpGetter
 	decodeConfig decodeResponseFunc //responseDecoder
 }
 
-func newHTTPConfigurationProvider(gc httpGetFunc, dc decodeResponseFunc) *httpConfigurationProvider {
+func newHTTPConfigurationProvider(gc HTTPGetFunc, dc decodeResponseFunc) *httpConfigurationProvider {
 	return &httpConfigurationProvider{gc, dc}
 }
 
