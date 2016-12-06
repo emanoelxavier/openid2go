@@ -48,7 +48,7 @@ func Test_getSigningKey_WhenProviderReturnsError(t *testing.T) {
 		keyGetter.close()
 	}()
 
-	rk, re := keyCache.getSigningKey(iss, kid)
+	rk, re := keyCache.getSigningKey(nil, iss, kid)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -77,7 +77,7 @@ func Test_getSigningKey_WhenKeyIsNotFound(t *testing.T) {
 		keyGetter.close()
 	}()
 
-	rk, re := keyCache.getSigningKey(iss, tkid)
+	rk, re := keyCache.getSigningKey(nil, iss, tkid)
 
 	expectValidationError(t, re, ValidationErrorKidNotFound, http.StatusUnauthorized, nil)
 
@@ -167,7 +167,7 @@ func expectCachedKid(t *testing.T, keyProv *signingKeyProvider, iss string, kid 
 
 func expectKey(t *testing.T, c signingKeyGetter, iss string, kid string, key string) {
 
-	sk, re := c.getSigningKey(iss, kid)
+	sk, re := c.getSigningKey(nil, iss, kid)
 
 	if re != nil {
 		t.Error("An error was returned but not expected.")

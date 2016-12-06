@@ -1,6 +1,9 @@
 package openid
 
-import "testing"
+import (
+	"net/http"
+	"testing"
+)
 
 type configurationGetterMock struct {
 	t     *testing.T
@@ -20,7 +23,7 @@ type getConfigurationResponse struct {
 	err    error
 }
 
-func (c *configurationGetterMock) getConfiguration(iss string) (configuration, error) {
+func (c *configurationGetterMock) getConfiguration(r *http.Request, iss string) (configuration, error) {
 	c.Calls <- &getConfigurationCall{iss}
 	gr := (<-c.Calls).(*getConfigurationResponse)
 	return gr.config, gr.err

@@ -20,7 +20,7 @@ func Test_getJwkSet_UsesCorrectUrl(t *testing.T) {
 		c.close()
 	}()
 
-	_, e := jwksProvider.getJwkSet(url)
+	_, e := jwksProvider.getJwkSet(nil, url)
 
 	if e == nil {
 		t.Error("An error was expected but not returned")
@@ -39,7 +39,7 @@ func Test_getJwkSet_WhenGetReturnsError(t *testing.T) {
 		c.close()
 	}()
 
-	_, e := jwksProvider.getJwkSet(anything)
+	_, e := jwksProvider.getJwkSet(nil, anything)
 
 	expectValidationError(t, e, ValidationErrorGetJwksFailure, http.StatusUnauthorized, readError)
 
@@ -59,7 +59,7 @@ func Test_getJwkSet_WhenGetSucceeds(t *testing.T) {
 		c.close()
 	}()
 
-	_, e := jwksProvider.getJwkSet(anything)
+	_, e := jwksProvider.getJwkSet(nil, anything)
 
 	if e != nil {
 		t.Error("An error was returned but not expected", e)
@@ -81,7 +81,7 @@ func Test_getJwkSet_WhenDecodeResponseReturnsError(t *testing.T) {
 		c.close()
 	}()
 
-	_, e := jwksProvider.getJwkSet(anything)
+	_, e := jwksProvider.getJwkSet(nil, anything)
 
 	expectValidationError(t, e, ValidationErrorDecodeJwksFailure, http.StatusUnauthorized, decodeError)
 
@@ -105,7 +105,7 @@ func Test_getJwkSet_WhenDecodeResponseSucceeds(t *testing.T) {
 		c.close()
 	}()
 
-	rj, e := jwksProvider.getJwkSet(anything)
+	rj, e := jwksProvider.getJwkSet(nil, anything)
 
 	if e != nil {
 		t.Error("An error was returned but not expected", e)

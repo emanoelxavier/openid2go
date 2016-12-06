@@ -1,6 +1,7 @@
 package openid
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/square/go-jose"
@@ -24,7 +25,7 @@ type getJwksResponse struct {
 	err  error
 }
 
-func (c *jwksGetterMock) getJwkSet(url string) (jose.JsonWebKeySet, error) {
+func (c *jwksGetterMock) getJwkSet(r *http.Request, url string) (jose.JsonWebKeySet, error) {
 	c.Calls <- &getJwksCall{url}
 	gr := (<-c.Calls).(*getJwksResponse)
 	return gr.jwks, gr.err

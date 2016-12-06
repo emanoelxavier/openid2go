@@ -18,7 +18,7 @@ func Test_getsigningKeySet_WhenGetConfigurationReturnsError(t *testing.T) {
 		configGetter.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(anything)
+	sk, re := skProv.getSigningKeySet(nil, anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -42,7 +42,7 @@ func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
 
 	}()
 
-	sk, re := skProv.getSigningKeySet(anything)
+	sk, re := skProv.getSigningKeySet(nil, anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -67,7 +67,7 @@ func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 
 	}()
 
-	sk, re := skProv.getSigningKeySet(anything)
+	sk, re := skProv.getSigningKeySet(nil, anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -94,7 +94,7 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 		pemEncoder.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(anything)
+	sk, re := skProv.getSigningKeySet(nil, anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -130,7 +130,7 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 		pemEncoder.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(anything)
+	sk, re := skProv.getSigningKeySet(nil, anything)
 
 	if re != nil {
 		t.Error("An error was returned but not expected.")

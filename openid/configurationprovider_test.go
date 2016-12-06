@@ -25,7 +25,7 @@ func Test_getConfiguration_UsesCorrectUrl(t *testing.T) {
 		c.close()
 	}()
 
-	_, e := configurationProvider.getConfiguration(issuer)
+	_, e := configurationProvider.getConfiguration(nil, issuer)
 
 	if e == nil {
 		t.Error("An error was expected but not returned")
@@ -44,7 +44,7 @@ func Test_getConfiguration_WhenGetReturnsError(t *testing.T) {
 		c.close()
 	}()
 
-	_, e := configurationProvider.getConfiguration("issuer")
+	_, e := configurationProvider.getConfiguration(nil, "issuer")
 
 	expectValidationError(t, e, ValidationErrorGetOpenIdConfigurationFailure, http.StatusUnauthorized, readError)
 
@@ -64,7 +64,7 @@ func Test_getConfiguration_WhenGetSucceeds(t *testing.T) {
 		c.close()
 	}()
 
-	_, e := configurationProvider.getConfiguration(anything)
+	_, e := configurationProvider.getConfiguration(nil, anything)
 
 	if e != nil {
 		t.Error("An error was returned but not expected", e)
@@ -86,7 +86,7 @@ func Test_getConfiguration_WhenDecodeResponseReturnsError(t *testing.T) {
 		c.close()
 	}()
 
-	_, e := configurationProvider.getConfiguration(anything)
+	_, e := configurationProvider.getConfiguration(nil, anything)
 
 	expectValidationError(t, e, ValidationErrorDecodeOpenIdConfigurationFailure, http.StatusUnauthorized, decodeError)
 
@@ -106,7 +106,7 @@ func Test_getConfiguration_WhenDecodeResponseSucceeds(t *testing.T) {
 		c.close()
 	}()
 
-	rc, e := configurationProvider.getConfiguration(anything)
+	rc, e := configurationProvider.getConfiguration(nil, anything)
 
 	if e != nil {
 		t.Error("An error was returned but not expected", e)

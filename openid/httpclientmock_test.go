@@ -40,7 +40,7 @@ type decodeResponseResp struct {
 	err   error
 }
 
-func (c *HTTPClientMock) httpGet(url string) (*http.Response, error) {
+func (c *HTTPClientMock) httpGet(r *http.Request, url string) (*http.Response, error) {
 	c.Calls <- &httpGetCall{url}
 	gr := (<-c.Calls).(*httpGetResp)
 	return gr.resp, gr.err
