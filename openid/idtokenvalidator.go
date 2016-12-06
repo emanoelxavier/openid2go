@@ -64,8 +64,16 @@ func (tv *idTokenValidator) renewAndGetSigningKey(r *http.Request, jt *jwt.Token
 	if err != nil {
 		return nil, err
 	}
+	kid, ok := jt.Header[keyIDJwtHeaderName].(string)
+	if !ok {
+		return nil, &ValidationError{
+			Code:       ValidationErrorKidNotFound,
+			Message:    "The token 'kid' header was not found or was empty.",
+			HTTPStatus: http.StatusUnauthorized,
+		}
+	}
 	var key []byte
-	if key, err = tv.keyGetter.getSigningKey(r, iss, jt.Header[keyIDJwtHeaderName].(string)); err == nil {
+	if key, err = tv.keyGetter.getSigningKey(r, iss, kid); err == nil {
 		return tv.rsaParser(key)
 	}
 
