@@ -93,21 +93,37 @@ func (ve ValidationError) Error() string {
 func jwtErrorToOpenIdError(e error) *ValidationError {
 	if jwtError, ok := e.(*jwt.ValidationError); ok {
 		if (jwtError.Errors & (jwt.ValidationErrorNotValidYet | jwt.ValidationErrorExpired | jwt.ValidationErrorSignatureInvalid)) != 0 {
-			return &ValidationError{Code: ValidationErrorJwtValidationFailure, Message: "Jwt token validation failed.", HTTPStatus: http.StatusUnauthorized}
+			return &ValidationError{
+				Code:       ValidationErrorJwtValidationFailure,
+				Message:    "Jwt token validation failed.",
+				HTTPStatus: http.StatusUnauthorized,
+			}
 		}
 
 		if (jwtError.Errors & jwt.ValidationErrorMalformed) != 0 {
-			return &ValidationError{Code: ValidationErrorJwtValidationFailure, Message: "Jwt token validation failed.", HTTPStatus: http.StatusBadRequest}
+			return &ValidationError{
+				Code:       ValidationErrorJwtValidationFailure,
+				Message:    "Jwt token validation failed.",
+				HTTPStatus: http.StatusBadRequest,
+			}
 		}
 
 		if (jwtError.Errors & jwt.ValidationErrorUnverifiable) != 0 {
 			// TODO: improve this once https://github.com/dgrijalva/jwt-go/issues/108 is resolved.
 			// Currently jwt.Parse does not surface errors returned by the KeyFunc.
-			return &ValidationError{Code: ValidationErrorJwtValidationFailure, Message: jwtError.Error(), HTTPStatus: http.StatusUnauthorized}
+			return &ValidationError{
+				Code:       ValidationErrorJwtValidationFailure,
+				Message:    jwtError.Error(),
+				HTTPStatus: http.StatusUnauthorized,
+			}
 		}
 	}
 
-	return &ValidationError{Code: ValidationErrorJwtValidationUnknownFailure, Message: "Jwt token validation failed with unknown error.", HTTPStatus: http.StatusInternalServerError}
+	return &ValidationError{
+		Code:       ValidationErrorJwtValidationUnknownFailure,
+		Message:    "Jwt token validation failed with unknown error.",
+		HTTPStatus: http.StatusInternalServerError,
+	}
 }
 
 func validationErrorToHTTPStatus(e error, rw http.ResponseWriter, req *http.Request) (halt bool) {
