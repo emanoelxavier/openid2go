@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-const wellKnownOpenIdConfiguration = "/.well-known/openid-configuration"
+const wellKnownOpenIDConfiguration = "/.well-known/openid-configuration"
 
 type decodeResponseFunc func(io.Reader, interface{}) error
 
@@ -33,7 +33,7 @@ func (httpProv *httpConfigurationProvider) getConfiguration(r *http.Request, iss
 	if issuer == "accounts.google.com" {
 		issuer = "https://" + issuer
 	}
-	configurationURI := issuer + wellKnownOpenIdConfiguration
+	configurationURI := issuer + wellKnownOpenIDConfiguration
 	var config configuration
 	resp, err := httpProv.getConfig(r, configurationURI)
 	if err != nil {

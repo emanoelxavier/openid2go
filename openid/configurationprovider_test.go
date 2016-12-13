@@ -23,7 +23,7 @@ func Test_getConfiguration_UsesCorrectUrlAndRequest(t *testing.T) {
 	issuer := "https://test"
 	configSuffix := "/.well-known/openid-configuration"
 	go func() {
-		c.assertHttpGet(req, issuer+configSuffix, nil, errors.New("Read configuration error"))
+		c.assertHTTPGet(req, issuer+configSuffix, nil, errors.New("Read configuration error"))
 		c.close()
 	}()
 
@@ -43,7 +43,7 @@ func Test_getConfiguration_WhenGetReturnsError(t *testing.T) {
 
 	readError := errors.New("Read configuration error")
 	go func() {
-		c.assertHttpGet(req, anything, nil, readError)
+		c.assertHTTPGet(req, anything, nil, readError)
 		c.close()
 	}()
 
@@ -63,7 +63,7 @@ func Test_getConfiguration_WhenGetSucceeds(t *testing.T) {
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(req, anything, resp, nil)
+		c.assertHTTPGet(req, anything, resp, nil)
 		c.assertDecodeResponse(respBody, nil, nil)
 		c.close()
 	}()
@@ -86,7 +86,7 @@ func Test_getConfiguration_WhenDecodeResponseReturnsError(t *testing.T) {
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(req, anything, resp, nil)
+		c.assertHTTPGet(req, anything, resp, nil)
 		c.assertDecodeResponse(anything, nil, decodeError)
 		c.close()
 	}()
@@ -107,7 +107,7 @@ func Test_getConfiguration_WhenDecodeResponseSucceeds(t *testing.T) {
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(req, anything, resp, nil)
+		c.assertHTTPGet(req, anything, resp, nil)
 		c.assertDecodeResponse(anything, config, nil)
 		c.close()
 	}()
@@ -122,8 +122,8 @@ func Test_getConfiguration_WhenDecodeResponseSucceeds(t *testing.T) {
 		t.Error("Expected issuer", config.Issuer, "but was", rc.Issuer)
 	}
 
-	if rc.JwksUri != config.JwksUri {
-		t.Error("Expected jwks uri", config.JwksUri, "but was", rc.JwksUri)
+	if rc.JwksURI != config.JwksURI {
+		t.Error("Expected jwks uri", config.JwksURI, "but was", rc.JwksURI)
 	}
 
 	c.assertDone()

@@ -66,11 +66,10 @@ func findKey(km map[string][]signingKey, issuer string, kid string) []byte {
 	if skSet, ok := km[issuer]; ok {
 		if kid == "" {
 			return skSet[0].key
-		} else {
-			for _, sk := range skSet {
-				if sk.keyID == kid {
-					return sk.key
-				}
+		}
+		for _, sk := range skSet {
+			if sk.keyID == kid {
+				return sk.key
 			}
 		}
 	}

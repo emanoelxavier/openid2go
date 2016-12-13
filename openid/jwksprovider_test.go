@@ -18,7 +18,7 @@ func Test_getJwkSet_UsesCorrectUrl(t *testing.T) {
 	url := "https://jwks"
 
 	go func() {
-		c.assertHttpGet(req, url, nil, errors.New("Read configuration error"))
+		c.assertHTTPGet(req, url, nil, errors.New("Read configuration error"))
 		c.close()
 	}()
 
@@ -38,7 +38,7 @@ func Test_getJwkSet_WhenGetReturnsError(t *testing.T) {
 
 	readError := errors.New("Read jwks error")
 	go func() {
-		c.assertHttpGet(req, anything, nil, readError)
+		c.assertHTTPGet(req, anything, nil, readError)
 		c.close()
 	}()
 
@@ -58,7 +58,7 @@ func Test_getJwkSet_WhenGetSucceeds(t *testing.T) {
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(req, anything, resp, nil)
+		c.assertHTTPGet(req, anything, resp, nil)
 		c.assertDecodeResponse(respBody, nil, nil)
 		c.close()
 	}()
@@ -81,7 +81,7 @@ func Test_getJwkSet_WhenDecodeResponseReturnsError(t *testing.T) {
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(req, anything, resp, nil)
+		c.assertHTTPGet(req, anything, resp, nil)
 		c.assertDecodeResponse(anything, nil, decodeError)
 		c.close()
 	}()
@@ -106,7 +106,7 @@ func Test_getJwkSet_WhenDecodeResponseSucceeds(t *testing.T) {
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(req, anything, resp, nil)
+		c.assertHTTPGet(req, anything, resp, nil)
 		c.assertDecodeResponse(anything, jwks, nil)
 		c.close()
 	}()

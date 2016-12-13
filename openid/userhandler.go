@@ -16,7 +16,7 @@ type UserHandler interface {
 // This is similar to using http.HandlerFunc as http.Handler
 type UserHandlerFunc func(*User, http.ResponseWriter, *http.Request)
 
-// ServeHttpWithUser calls f(u, w, r)
+// ServeHTTPWithUser calls f(u, w, r)
 func (f UserHandlerFunc) ServeHTTPWithUser(u *User, w http.ResponseWriter, r *http.Request) {
 	f(u, w, r)
 }

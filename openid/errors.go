@@ -89,8 +89,8 @@ func (ve ValidationError) Error() string {
 	return fmt.Sprintf("Validation error. %v", ve.Message)
 }
 
-// jwtErrorToOpenIdError converts errors of the type *jwt.ValidationError returned during token validation into errors of type *ValidationError
-func jwtErrorToOpenIdError(e error) *ValidationError {
+// jwtErrorToOpenIDError converts errors of the type *jwt.ValidationError returned during token validation into errors of type *ValidationError
+func jwtErrorToOpenIDError(e error) *ValidationError {
 	if jwtError, ok := e.(*jwt.ValidationError); ok {
 		if (jwtError.Errors & (jwt.ValidationErrorNotValidYet | jwt.ValidationErrorExpired | jwt.ValidationErrorSignatureInvalid)) != 0 {
 			return &ValidationError{

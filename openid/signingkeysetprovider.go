@@ -31,14 +31,18 @@ func (signProv *signingKeySetProvider) getSigningKeySet(r *http.Request, iss str
 		return nil, err
 	}
 
-	jwks, err := signProv.jwksGetter.getJwkSet(r, conf.JwksUri)
+	jwks, err := signProv.jwksGetter.getJwkSet(r, conf.JwksURI)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if len(jwks.Keys) == 0 {
-		return nil, &ValidationError{Code: ValidationErrorEmptyJwk, Message: fmt.Sprintf("The jwk set retrieved for the issuer %v does not contain any key.", iss), HTTPStatus: http.StatusUnauthorized}
+		return nil, &ValidationError{
+			Code:       ValidationErrorEmptyJwk,
+			Message:    fmt.Sprintf("The jwk set retrieved for the issuer %v does not contain any key.", iss),
+			HTTPStatus: http.StatusUnauthorized,
+		}
 	}
 
 	sk := make([]signingKey, len(jwks.Keys))

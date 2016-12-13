@@ -21,19 +21,31 @@ type User struct {
 
 func newUser(t *jwt.Token) (*User, error) {
 	if t == nil {
-		return nil, &ValidationError{Code: ValidationErrorIdTokenEmpty, Message: "The token provided to created a user was nil.", HTTPStatus: http.StatusUnauthorized}
+		return nil, &ValidationError{
+			Code:       ValidationErrorIdTokenEmpty,
+			Message:    "The token provided to created a user was nil.",
+			HTTPStatus: http.StatusUnauthorized,
+		}
 	}
 
 	iss := getIssuer(t).(string)
 
 	if iss == "" {
-		return nil, &ValidationError{Code: ValidationErrorInvalidIssuer, Message: "The token provided to created a user did not contain a valid 'iss' claim", HTTPStatus: http.StatusInternalServerError}
+		return nil, &ValidationError{
+			Code:       ValidationErrorInvalidIssuer,
+			Message:    "The token provided to created a user did not contain a valid 'iss' claim",
+			HTTPStatus: http.StatusInternalServerError,
+		}
 	}
 
 	sub := getSubject(t).(string)
 
 	if sub == "" {
-		return nil, &ValidationError{Code: ValidationErrorInvalidSubject, Message: "The token provided to created a user did not contain a valid 'sub' claim.", HTTPStatus: http.StatusInternalServerError}
+		return nil, &ValidationError{
+			Code:       ValidationErrorInvalidSubject,
+			Message:    "The token provided to created a user did not contain a valid 'sub' claim.",
+			HTTPStatus: http.StatusInternalServerError,
+		}
 
 	}
 

@@ -47,7 +47,7 @@ func (c *HTTPClientMock) httpGet(req *http.Request, url string) (*http.Response,
 	return gr.resp, gr.err
 }
 
-func (c *HTTPClientMock) assertHttpGet(req *http.Request, url string, resp *http.Response, err error) {
+func (c *HTTPClientMock) assertHTTPGet(req *http.Request, url string, resp *http.Response, err error) {
 	call := (<-c.Calls).(*httpGetCall)
 	if req == nil || call.req != req {
 		c.t.Error("Expected getSigningKey with req", req, "but was", call.req)
@@ -65,7 +65,7 @@ func (c *HTTPClientMock) decodeResponse(reader io.Reader, value interface{}) err
 	case *configuration:
 		if dr.value != nil {
 			v.Issuer = dr.value.(*configuration).Issuer
-			v.JwksUri = dr.value.(*configuration).JwksUri
+			v.JwksURI = dr.value.(*configuration).JwksURI
 		}
 	case *jose.JsonWebKeySet:
 		if dr.value != nil {

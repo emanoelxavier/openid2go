@@ -13,7 +13,7 @@ import (
 func Test_getSigningKey_WhenGetProvidersReturnsError(t *testing.T) {
 	pm, _, _, _, tv := createIDTokenValidator(t)
 
-	ee := errors.New("Error getting providers.")
+	ee := errors.New("Error getting providers")
 
 	go func() {
 		pm.assertGetProviders(nil, ee)
