@@ -3,6 +3,7 @@ package openid
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/square/go-jose"
@@ -31,18 +32,19 @@ func Test_getsigningKeySet_WhenGetConfigurationReturnsError(t *testing.T) {
 
 func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
 	configGetter, jwksGetter, _, skProv := createSigningKeySetProvider(t)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	ee := &ValidationError{Code: ValidationErrorGetJwksFailure, HTTPStatus: http.StatusUnauthorized}
 
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		configGetter.close()
-		jwksGetter.assertGetJwks(anything, jose.JsonWebKeySet{}, ee)
+		jwksGetter.assertGetJwks(req, anything, jose.JsonWebKeySet{}, ee)
 		jwksGetter.close()
 
 	}()
 
-	sk, re := skProv.getSigningKeySet(nil, anything)
+	sk, re := skProv.getSigningKeySet(req, anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -56,18 +58,19 @@ func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
 
 func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 	configGetter, jwksGetter, _, skProv := createSigningKeySetProvider(t)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	ee := &ValidationError{Code: ValidationErrorEmptyJwk, HTTPStatus: http.StatusUnauthorized}
 
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		configGetter.close()
-		jwksGetter.assertGetJwks(anything, jose.JsonWebKeySet{}, nil)
+		jwksGetter.assertGetJwks(req, anything, jose.JsonWebKeySet{}, nil)
 		jwksGetter.close()
 
 	}()
 
-	sk, re := skProv.getSigningKeySet(nil, anything)
+	sk, re := skProv.getSigningKeySet(req, anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -81,6 +84,7 @@ func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 
 func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 	configGetter, jwksGetter, pemEncoder, skProv := createSigningKeySetProvider(t)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	ee := &ValidationError{Code: ValidationErrorMarshallingKey, HTTPStatus: http.StatusInternalServerError}
 	ejwks := jose.JsonWebKeySet{Keys: []jose.JsonWebKey{{Key: nil}}}
@@ -88,13 +92,13 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		configGetter.close()
-		jwksGetter.assertGetJwks(anything, ejwks, nil)
+		jwksGetter.assertGetJwks(req, anything, ejwks, nil)
 		jwksGetter.close()
 		pemEncoder.assertPEMEncodePublicKey(nil, nil, ee)
 		pemEncoder.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(nil, anything)
+	sk, re := skProv.getSigningKeySet(req, anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -109,6 +113,7 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 
 func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 	configGetter, jwksGetter, pemEncoder, skProv := createSigningKeySetProvider(t)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	keys := make([]jose.JsonWebKey, 2)
 	encryptedKeys := make([]signingKey, 2)
@@ -121,7 +126,7 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 	ejwks := jose.JsonWebKeySet{Keys: keys}
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
-		jwksGetter.assertGetJwks(anything, ejwks, nil)
+		jwksGetter.assertGetJwks(req, anything, ejwks, nil)
 		for i, encryptedKey := range encryptedKeys {
 			pemEncoder.assertPEMEncodePublicKey(keys[i].Key, encryptedKey.key, nil)
 		}
@@ -130,7 +135,7 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 		pemEncoder.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(nil, anything)
+	sk, re := skProv.getSigningKeySet(req, anything)
 
 	if re != nil {
 		t.Error("An error was returned but not expected.")

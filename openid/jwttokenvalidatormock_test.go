@@ -17,7 +17,8 @@ func newJwtTokenValidatorMock(t *testing.T) *jwtTokenValidatorMock {
 }
 
 type validateCall struct {
-	t string
+	req *http.Request
+	t   string
 }
 
 type validateResp struct {
@@ -26,7 +27,7 @@ type validateResp struct {
 }
 
 func (j *jwtTokenValidatorMock) validate(r *http.Request, t string) (*jwt.Token, error) {
-	j.Calls <- &validateCall{t}
+	j.Calls <- &validateCall{r, t}
 	vr := (<-j.Calls).(*validateResp)
 	return vr.jt, vr.err
 }

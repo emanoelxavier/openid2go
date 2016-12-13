@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/square/go-jose"
@@ -12,15 +13,16 @@ import (
 func Test_getJwkSet_UsesCorrectUrl(t *testing.T) {
 	c := NewHTTPClientMock(t)
 	jwksProvider := httpJwksProvider{getJwks: c.httpGet}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	url := "https://jwks"
 
 	go func() {
-		c.assertHttpGet(url, nil, errors.New("Read configuration error"))
+		c.assertHttpGet(req, url, nil, errors.New("Read configuration error"))
 		c.close()
 	}()
 
-	_, e := jwksProvider.getJwkSet(nil, url)
+	_, e := jwksProvider.getJwkSet(req, url)
 
 	if e == nil {
 		t.Error("An error was expected but not returned")
@@ -32,14 +34,15 @@ func Test_getJwkSet_UsesCorrectUrl(t *testing.T) {
 func Test_getJwkSet_WhenGetReturnsError(t *testing.T) {
 	c := NewHTTPClientMock(t)
 	jwksProvider := httpJwksProvider{getJwks: c.httpGet}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	readError := errors.New("Read jwks error")
 	go func() {
-		c.assertHttpGet(anything, nil, readError)
+		c.assertHttpGet(req, anything, nil, readError)
 		c.close()
 	}()
 
-	_, e := jwksProvider.getJwkSet(nil, anything)
+	_, e := jwksProvider.getJwkSet(req, anything)
 
 	expectValidationError(t, e, ValidationErrorGetJwksFailure, http.StatusUnauthorized, readError)
 
@@ -49,17 +52,18 @@ func Test_getJwkSet_WhenGetReturnsError(t *testing.T) {
 func Test_getJwkSet_WhenGetSucceeds(t *testing.T) {
 	c := NewHTTPClientMock(t)
 	jwksProvider := httpJwksProvider{c.httpGet, c.decodeResponse}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	respBody := "jwk set"
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(anything, resp, nil)
+		c.assertHttpGet(req, anything, resp, nil)
 		c.assertDecodeResponse(respBody, nil, nil)
 		c.close()
 	}()
 
-	_, e := jwksProvider.getJwkSet(nil, anything)
+	_, e := jwksProvider.getJwkSet(req, anything)
 
 	if e != nil {
 		t.Error("An error was returned but not expected", e)
@@ -71,17 +75,18 @@ func Test_getJwkSet_WhenGetSucceeds(t *testing.T) {
 func Test_getJwkSet_WhenDecodeResponseReturnsError(t *testing.T) {
 	c := NewHTTPClientMock(t)
 	jwksProvider := httpJwksProvider{c.httpGet, c.decodeResponse}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	decodeError := errors.New("Decode jwks error")
 	respBody := "jwk set."
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(anything, resp, nil)
+		c.assertHttpGet(req, anything, resp, nil)
 		c.assertDecodeResponse(anything, nil, decodeError)
 		c.close()
 	}()
 
-	_, e := jwksProvider.getJwkSet(nil, anything)
+	_, e := jwksProvider.getJwkSet(req, anything)
 
 	expectValidationError(t, e, ValidationErrorDecodeJwksFailure, http.StatusUnauthorized, decodeError)
 
@@ -91,6 +96,7 @@ func Test_getJwkSet_WhenDecodeResponseReturnsError(t *testing.T) {
 func Test_getJwkSet_WhenDecodeResponseSucceeds(t *testing.T) {
 	c := NewHTTPClientMock(t)
 	jwksProvider := httpJwksProvider{c.httpGet, c.decodeResponse}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	keys := []jose.JsonWebKey{
 		{Key: "key1", Certificates: nil, KeyID: "keyid1", Algorithm: "algo1", Use: "use1"},
 		{Key: "key2", Certificates: nil, KeyID: "keyid2", Algorithm: "algo2", Use: "use2"},
@@ -100,12 +106,12 @@ func Test_getJwkSet_WhenDecodeResponseSucceeds(t *testing.T) {
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(anything, resp, nil)
+		c.assertHttpGet(req, anything, resp, nil)
 		c.assertDecodeResponse(anything, jwks, nil)
 		c.close()
 	}()
 
-	rj, e := jwksProvider.getJwkSet(nil, anything)
+	rj, e := jwksProvider.getJwkSet(req, anything)
 
 	if e != nil {
 		t.Error("An error was returned but not expected", e)

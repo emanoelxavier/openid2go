@@ -15,6 +15,7 @@ func newSigningKeyGetterMock(t *testing.T) *signingKeyGetterMock {
 }
 
 type getSigningKeyCall struct {
+	req   *http.Request
 	iss   string
 	keyID string
 }
@@ -33,7 +34,7 @@ type flushCachedSigningKeysResp struct {
 }
 
 func (s *signingKeyGetterMock) getSigningKey(r *http.Request, iss string, keyID string) ([]byte, error) {
-	s.Calls <- &getSigningKeyCall{iss, keyID}
+	s.Calls <- &getSigningKeyCall{r, iss, keyID}
 	sr := (<-s.Calls).(*getSigningKeyResp)
 	return sr.key, sr.err
 }
@@ -44,8 +45,11 @@ func (s *signingKeyGetterMock) flushCachedSigningKeys(iss string) error {
 	return sr.err
 }
 
-func (s *signingKeyGetterMock) assertGetSigningKey(iss string, keyID string, key []byte, err error) {
+func (s *signingKeyGetterMock) assertGetSigningKey(req *http.Request, iss string, keyID string, key []byte, err error) {
 	call := (<-s.Calls).(*getSigningKeyCall)
+	if req == nil || call.req != req {
+		s.t.Error("Expected getSigningKey with req", req, "but was", call.req)
+	}
 	if iss != anything && call.iss != iss {
 		s.t.Error("Expected getSigningKey with issuer", iss, "but was", call.iss)
 	}

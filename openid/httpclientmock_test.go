@@ -23,6 +23,7 @@ func NewHTTPClientMock(t *testing.T) *HTTPClientMock {
 }
 
 type httpGetCall struct {
+	req *http.Request
 	url string
 }
 
@@ -40,14 +41,17 @@ type decodeResponseResp struct {
 	err   error
 }
 
-func (c *HTTPClientMock) httpGet(r *http.Request, url string) (*http.Response, error) {
-	c.Calls <- &httpGetCall{url}
+func (c *HTTPClientMock) httpGet(req *http.Request, url string) (*http.Response, error) {
+	c.Calls <- &httpGetCall{req, url}
 	gr := (<-c.Calls).(*httpGetResp)
 	return gr.resp, gr.err
 }
 
-func (c *HTTPClientMock) assertHttpGet(url string, resp *http.Response, err error) {
+func (c *HTTPClientMock) assertHttpGet(req *http.Request, url string, resp *http.Response, err error) {
 	call := (<-c.Calls).(*httpGetCall)
+	if req == nil || call.req != req {
+		c.t.Error("Expected getSigningKey with req", req, "but was", call.req)
+	}
 	if url != anything && call.url != url {
 		c.t.Error("Expected httpGet with", url, "but was", call.url)
 	}
