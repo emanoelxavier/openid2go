@@ -60,18 +60,12 @@ func (tv *idTokenValidator) renewAndGetSigningKey(r *http.Request, jt *jwt.Token
 	iss := jt.Claims.(jwt.MapClaims)[issuerClaimName].(string)
 
 	err := tv.keyGetter.flushCachedSigningKeys(iss)
-
 	if err != nil {
 		return nil, err
 	}
-	kid, ok := jt.Header[keyIDJwtHeaderName].(string)
-	if !ok {
-		return nil, &ValidationError{
-			Code:       ValidationErrorKidNotFound,
-			Message:    "The token 'kid' header was not found or was empty.",
-			HTTPStatus: http.StatusUnauthorized,
-		}
-	}
+
+	kid := getTokenKid(jt)
+
 	var key []byte
 	if key, err = tv.keyGetter.getSigningKey(r, iss, kid); err == nil {
 		return tv.rsaParser(key)
@@ -104,11 +98,7 @@ func (tv *idTokenValidator) getSigningKey(r *http.Request, jt *jwt.Token) (inter
 		return nil, err
 	}
 
-	var kid string
-
-	if jt.Header[keyIDJwtHeaderName] != nil {
-		kid = jt.Header[keyIDJwtHeaderName].(string)
-	}
+	kid := getTokenKid(jt)
 
 	var key []byte
 	if key, err = tv.keyGetter.getSigningKey(r, p.Issuer, kid); err == nil {
@@ -116,6 +106,11 @@ func (tv *idTokenValidator) getSigningKey(r *http.Request, jt *jwt.Token) (inter
 	}
 
 	return nil, err
+}
+
+func getTokenKid(jt *jwt.Token) string {
+	kid, _ := jt.Header[keyIDJwtHeaderName].(string)
+	return kid
 }
 
 func validateIssuer(jt *jwt.Token, ps []Provider) (*Provider, error) {
