@@ -47,7 +47,7 @@ func (s *signingKeyGetterMock) flushCachedSigningKeys(iss string) error {
 
 func (s *signingKeyGetterMock) assertGetSigningKey(req *http.Request, iss string, keyID string, key []byte, err error) {
 	call := (<-s.Calls).(*getSigningKeyCall)
-	if req == nil || call.req != req {
+	if call.req != req {
 		s.t.Error("Expected getSigningKey with req", req, "but was", call.req)
 	}
 	if iss != anything && call.iss != iss {

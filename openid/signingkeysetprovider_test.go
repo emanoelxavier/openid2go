@@ -58,19 +58,18 @@ func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
 
 func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 	configGetter, jwksGetter, _, skProv := createSigningKeySetProvider(t)
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	ee := &ValidationError{Code: ValidationErrorEmptyJwk, HTTPStatus: http.StatusUnauthorized}
 
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		configGetter.close()
-		jwksGetter.assertGetJwks(req, anything, jose.JsonWebKeySet{}, nil)
+		jwksGetter.assertGetJwks(nil, anything, jose.JsonWebKeySet{}, nil)
 		jwksGetter.close()
 
 	}()
 
-	sk, re := skProv.getSigningKeySet(req, anything)
+	sk, re := skProv.getSigningKeySet(nil, anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -84,7 +83,6 @@ func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 
 func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 	configGetter, jwksGetter, pemEncoder, skProv := createSigningKeySetProvider(t)
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	ee := &ValidationError{Code: ValidationErrorMarshallingKey, HTTPStatus: http.StatusInternalServerError}
 	ejwks := jose.JsonWebKeySet{Keys: []jose.JsonWebKey{{Key: nil}}}
@@ -92,13 +90,13 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		configGetter.close()
-		jwksGetter.assertGetJwks(req, anything, ejwks, nil)
+		jwksGetter.assertGetJwks(nil, anything, ejwks, nil)
 		jwksGetter.close()
 		pemEncoder.assertPEMEncodePublicKey(nil, nil, ee)
 		pemEncoder.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(req, anything)
+	sk, re := skProv.getSigningKeySet(nil, anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 

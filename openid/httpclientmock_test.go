@@ -49,7 +49,7 @@ func (c *HTTPClientMock) httpGet(req *http.Request, url string) (*http.Response,
 
 func (c *HTTPClientMock) assertHTTPGet(req *http.Request, url string, resp *http.Response, err error) {
 	call := (<-c.Calls).(*httpGetCall)
-	if req == nil || call.req != req {
+	if call.req != req {
 		c.t.Error("Expected getSigningKey with req", req, "but was", call.req)
 	}
 	if url != anything && call.url != url {

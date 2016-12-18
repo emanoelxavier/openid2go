@@ -321,7 +321,6 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.
 func Test_getSigningKey_UsingValidToken_WithoutKeyIdentifier_WhenSigningKeyGetterSucceeds(t *testing.T) {
 	pm, _, sm, kp, tv := createIDTokenValidator(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	iss := "https://issuer"
 	keyID := ""
 	esk := "signingKey"
@@ -329,7 +328,7 @@ func Test_getSigningKey_UsingValidToken_WithoutKeyIdentifier_WhenSigningKeyGette
 
 	go func() {
 		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
-		sm.assertGetSigningKey(req, iss, keyID, []byte(esk), nil)
+		sm.assertGetSigningKey(nil, iss, keyID, []byte(esk), nil)
 		kp.assertParse([]byte(esk), pk, nil)
 		pm.close()
 		sm.close()
@@ -341,7 +340,7 @@ func Test_getSigningKey_UsingValidToken_WithoutKeyIdentifier_WhenSigningKeyGette
 	jt.Claims.(jwt.MapClaims)["aud"] = "client"
 	jt.Claims.(jwt.MapClaims)["sub"] = "subject1"
 
-	rsk, err := tv.getSigningKey(req, jt)
+	rsk, err := tv.getSigningKey(nil, jt)
 
 	if err != nil {
 		t.Error("An error was returned but not expected.", err)
@@ -356,7 +355,6 @@ func Test_getSigningKey_UsingValidToken_WithoutKeyIdentifier_WhenSigningKeyGette
 func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
 	pm, _, sm, kp, tv := createIDTokenValidator(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	iss := "https://issuer"
 	keyID := "kid"
 	esk := "signingKey"
@@ -364,7 +362,7 @@ func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
 
 	go func() {
 		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
-		sm.assertGetSigningKey(req, iss, keyID, []byte(esk), nil)
+		sm.assertGetSigningKey(nil, iss, keyID, []byte(esk), nil)
 		kp.assertParse([]byte(esk), pk, nil)
 		pm.close()
 		sm.close()
@@ -377,7 +375,7 @@ func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
 	jt.Claims.(jwt.MapClaims)["sub"] = "subject1"
 	jt.Header["kid"] = keyID
 
-	rsk, err := tv.getSigningKey(req, jt)
+	rsk, err := tv.getSigningKey(nil, jt)
 
 	if err != nil {
 		t.Error("An error was returned but not expected.", err)
@@ -411,12 +409,10 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenFlushCachedSigningKeysReturn
 func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeyReturnsError(t *testing.T) {
 	_, _, sm, _, tv := createIDTokenValidator(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-
 	ee := &ValidationError{Code: ValidationErrorIssuerNotFound, HTTPStatus: http.StatusUnauthorized}
 	go func() {
 		sm.assertFlushCachedSigningKeys(anything, nil)
-		sm.assertGetSigningKey(req, anything, anything, nil, ee)
+		sm.assertGetSigningKey(nil, anything, anything, nil, ee)
 		sm.close()
 	}()
 
@@ -424,7 +420,7 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeyReturnsError(t 
 	jt.Claims.(jwt.MapClaims)["iss"] = ""
 	jt.Header["kid"] = ""
 
-	_, err := tv.renewAndGetSigningKey(req, jt)
+	_, err := tv.renewAndGetSigningKey(nil, jt)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, nil)
 
@@ -433,13 +429,12 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeyReturnsError(t 
 
 func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeySucceeds(t *testing.T) {
 	_, _, sm, kp, tv := createIDTokenValidator(t)
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	esk := "signingKey"
 	pk := &rsa.PublicKey{N: nil, E: 365}
 
 	go func() {
 		sm.assertFlushCachedSigningKeys(anything, nil)
-		sm.assertGetSigningKey(req, anything, anything, []byte(esk), nil)
+		sm.assertGetSigningKey(nil, anything, anything, []byte(esk), nil)
 		kp.assertParse([]byte(esk), pk, nil)
 		sm.close()
 		kp.close()
@@ -449,7 +444,7 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeySucceeds(t *tes
 	jt.Claims.(jwt.MapClaims)["iss"] = ""
 	jt.Header["kid"] = ""
 
-	rsk, err := tv.renewAndGetSigningKey(req, jt)
+	rsk, err := tv.renewAndGetSigningKey(nil, jt)
 
 	if err != nil {
 		t.Error("An error was returned but not expected.", err)

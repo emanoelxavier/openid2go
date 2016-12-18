@@ -34,7 +34,7 @@ func (c *jwksGetterMock) getJwkSet(r *http.Request, url string) (jose.JsonWebKey
 
 func (c *jwksGetterMock) assertGetJwks(req *http.Request, url string, jwks jose.JsonWebKeySet, err error) {
 	call := (<-c.Calls).(*getJwksCall)
-	if req == nil || call.req != req {
+	if call.req != req {
 		c.t.Error("Expected getSigningKey with req", req, "but was", call.req)
 	}
 	if url != anything && call.url != url {
