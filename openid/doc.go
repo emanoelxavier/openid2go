@@ -19,11 +19,13 @@ of them you will need an instance of the Configuration type, to create that you 
 
        func ErrorHandler(eh ErrorHandlerFunc) func(*Configuration) error
        func ProvidersGetter(pg GetProvidersFunc) func(*Configuration) error
+       func HTTPGetter(hg HTTPGetFunc) func(*Configuration) error
 
        // extension points:
 
        type ErrorHandlerFunc func(error, http.ResponseWriter, *http.Request) bool
        type GetProvidersFunc func() ([]Provider, error)
+       type HTTPGetFunc func(r *http.Request, url string) (*http.Response, error)
 
 The Example below demonstrates these elements working together.
 

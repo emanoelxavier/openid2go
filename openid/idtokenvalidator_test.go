@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/dgrijalva/jwt-go"
@@ -12,14 +13,14 @@ import (
 func Test_getSigningKey_WhenGetProvidersReturnsError(t *testing.T) {
 	pm, _, _, _, tv := createIDTokenValidator(t)
 
-	ee := errors.New("Error getting providers.")
+	ee := errors.New("Error getting providers")
 
 	go func() {
 		pm.assertGetProviders(nil, ee)
 		pm.close()
 	}()
 
-	sk, err := tv.getSigningKey(nil)
+	sk, err := tv.getSigningKey(nil, nil)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -45,10 +46,10 @@ func Test_getSigningKey_WhenGetProvidersReturnsEmptyCollection(t *testing.T) {
 		pm.close()
 	}()
 
-	_, err := tv.getSigningKey(nil)
+	_, err := tv.getSigningKey(nil, nil)
 	expectSetupError(t, err, SetupErrorEmptyProviderCollection)
 
-	_, err = tv.getSigningKey(nil)
+	_, err = tv.getSigningKey(nil, nil)
 	expectSetupError(t, err, SetupErrorEmptyProviderCollection)
 
 	pm.assertDone()
@@ -65,7 +66,7 @@ func Test_getSigningKey_UsingTokenWithInvalidIssuerType(t *testing.T) {
 
 	jt := jwt.New(jwt.SigningMethodRS256)
 	jt.Claims.(jwt.MapClaims)["iss"] = 0 // The expected issuer type is string, not int.
-	sk, err := tv.getSigningKey(jt)
+	sk, err := tv.getSigningKey(nil, jt)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -88,7 +89,7 @@ func Test_getSigningKey_UsingTokenWithEmptyIssuer(t *testing.T) {
 	jt := jwt.New(jwt.SigningMethodRS256)
 
 	// The token has no 'iss' claim
-	sk, err := tv.getSigningKey(jt)
+	sk, err := tv.getSigningKey(nil, jt)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -98,7 +99,7 @@ func Test_getSigningKey_UsingTokenWithEmptyIssuer(t *testing.T) {
 
 	// The token has '' as 'iss' claim
 	jt.Claims.(jwt.MapClaims)["iss"] = ""
-	sk, err = tv.getSigningKey(jt)
+	sk, err = tv.getSigningKey(nil, jt)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -121,7 +122,7 @@ func Test_getSigningKey_UsingTokenWithUnknownIssuer(t *testing.T) {
 	jt.Claims.(jwt.MapClaims)["iss"] = "http://unknown"
 
 	// The token has no 'iss' claim
-	sk, err := tv.getSigningKey(jt)
+	sk, err := tv.getSigningKey(nil, jt)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -143,7 +144,7 @@ func Test_getSigningKey_UsingTokenWithInvalidAudienceType(t *testing.T) {
 	jt.Claims.(jwt.MapClaims)["iss"] = "https://issuer"
 	jt.Claims.(jwt.MapClaims)["aud"] = 0 // Expected 'aud' type is string
 
-	sk, err := tv.getSigningKey(jt)
+	sk, err := tv.getSigningKey(nil, jt)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -166,7 +167,7 @@ func Test_getSigningKey_UsingTokenWithInvalidAudience(t *testing.T) {
 	jt.Claims.(jwt.MapClaims)["iss"] = "https://issuer"
 
 	// No audience claim
-	sk, err := tv.getSigningKey(jt)
+	sk, err := tv.getSigningKey(nil, jt)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -176,7 +177,7 @@ func Test_getSigningKey_UsingTokenWithInvalidAudience(t *testing.T) {
 
 	// Empty audience claim.
 	jt.Claims.(jwt.MapClaims)["aud"] = ""
-	sk, err = tv.getSigningKey(jt)
+	sk, err = tv.getSigningKey(nil, jt)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -199,7 +200,7 @@ func Test_getSigningKey_UsingTokenWithUnknownAudience(t *testing.T) {
 	jt.Claims.(jwt.MapClaims)["iss"] = "https://issuer"
 	jt.Claims.(jwt.MapClaims)["aud"] = "client3" // unknown audience
 
-	sk, err := tv.getSigningKey(jt)
+	sk, err := tv.getSigningKey(nil, jt)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -221,7 +222,7 @@ func Test_getSigningKey_UsingTokenWithUnknownMultipleAudiences(t *testing.T) {
 	jt.Claims.(jwt.MapClaims)["iss"] = "https://issuer"
 	jt.Claims.(jwt.MapClaims)["aud"] = []interface{}{"client3", "client4"} // unknown audiences
 
-	sk, err := tv.getSigningKey(jt)
+	sk, err := tv.getSigningKey(nil, jt)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -243,7 +244,7 @@ func Test_getSigningKey_UsingTokenWithInvalidSubjectType(t *testing.T) {
 	jt.Claims.(jwt.MapClaims)["iss"] = "https://issuer"
 	jt.Claims.(jwt.MapClaims)["aud"] = "client"
 	jt.Claims.(jwt.MapClaims)["sub"] = 0 // The expected 'sub' claim type is string
-	sk, err := tv.getSigningKey(jt)
+	sk, err := tv.getSigningKey(nil, jt)
 
 	if sk != nil {
 		t.Error("The returned signing key should be nil.")
@@ -256,13 +257,14 @@ func Test_getSigningKey_UsingTokenWithInvalidSubjectType(t *testing.T) {
 func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterReturnsError(t *testing.T) {
 	pm, _, sm, _, tv := createIDTokenValidator(t)
 
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	iss := "https://issuer"
 	keyID := "kid"
 	ee := &ValidationError{Code: ValidationErrorIssuerNotFound, HTTPStatus: http.StatusUnauthorized}
 
 	go func() {
 		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
-		sm.assertGetSigningKey(iss, keyID, nil, ee)
+		sm.assertGetSigningKey(req, iss, keyID, nil, ee)
 		pm.close()
 		sm.close()
 	}()
@@ -273,7 +275,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterReturnsError(t *test
 	jt.Claims.(jwt.MapClaims)["sub"] = "subject1"
 	jt.Header["kid"] = keyID
 
-	_, err := tv.getSigningKey(jt)
+	_, err := tv.getSigningKey(req, jt)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, nil)
 	pm.assertDone()
@@ -283,6 +285,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterReturnsError(t *test
 func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.T) {
 	pm, _, sm, kp, tv := createIDTokenValidator(t)
 
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	iss := "https://issuer"
 	keyID := "kid"
 	esk := "signingKey"
@@ -290,7 +293,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.
 
 	go func() {
 		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
-		sm.assertGetSigningKey(iss, keyID, []byte(esk), nil)
+		sm.assertGetSigningKey(req, iss, keyID, []byte(esk), nil)
 		kp.assertParse([]byte(esk), pk, nil)
 		pm.close()
 		sm.close()
@@ -303,7 +306,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.
 	jt.Claims.(jwt.MapClaims)["sub"] = "subject1"
 	jt.Header["kid"] = keyID
 
-	rsk, err := tv.getSigningKey(jt)
+	rsk, err := tv.getSigningKey(req, jt)
 
 	if err != nil {
 		t.Error("An error was returned but not expected.", err)
@@ -325,7 +328,7 @@ func Test_getSigningKey_UsingValidToken_WithoutKeyIdentifier_WhenSigningKeyGette
 
 	go func() {
 		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
-		sm.assertGetSigningKey(iss, keyID, []byte(esk), nil)
+		sm.assertGetSigningKey(nil, iss, keyID, []byte(esk), nil)
 		kp.assertParse([]byte(esk), pk, nil)
 		pm.close()
 		sm.close()
@@ -337,7 +340,7 @@ func Test_getSigningKey_UsingValidToken_WithoutKeyIdentifier_WhenSigningKeyGette
 	jt.Claims.(jwt.MapClaims)["aud"] = "client"
 	jt.Claims.(jwt.MapClaims)["sub"] = "subject1"
 
-	rsk, err := tv.getSigningKey(jt)
+	rsk, err := tv.getSigningKey(nil, jt)
 
 	if err != nil {
 		t.Error("An error was returned but not expected.", err)
@@ -359,7 +362,7 @@ func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
 
 	go func() {
 		pm.assertGetProviders([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
-		sm.assertGetSigningKey(iss, keyID, []byte(esk), nil)
+		sm.assertGetSigningKey(nil, iss, keyID, []byte(esk), nil)
 		kp.assertParse([]byte(esk), pk, nil)
 		pm.close()
 		sm.close()
@@ -372,7 +375,7 @@ func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
 	jt.Claims.(jwt.MapClaims)["sub"] = "subject1"
 	jt.Header["kid"] = keyID
 
-	rsk, err := tv.getSigningKey(jt)
+	rsk, err := tv.getSigningKey(nil, jt)
 
 	if err != nil {
 		t.Error("An error was returned but not expected.", err)
@@ -396,7 +399,7 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenFlushCachedSigningKeysReturn
 	jt := jwt.New(jwt.SigningMethodRS256)
 	jt.Claims.(jwt.MapClaims)["iss"] = ""
 
-	_, err := tv.renewAndGetSigningKey(jt)
+	_, err := tv.renewAndGetSigningKey(nil, jt)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, nil)
 
@@ -409,7 +412,7 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeyReturnsError(t 
 	ee := &ValidationError{Code: ValidationErrorIssuerNotFound, HTTPStatus: http.StatusUnauthorized}
 	go func() {
 		sm.assertFlushCachedSigningKeys(anything, nil)
-		sm.assertGetSigningKey(anything, anything, nil, ee)
+		sm.assertGetSigningKey(nil, anything, anything, nil, ee)
 		sm.close()
 	}()
 
@@ -417,7 +420,7 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeyReturnsError(t 
 	jt.Claims.(jwt.MapClaims)["iss"] = ""
 	jt.Header["kid"] = ""
 
-	_, err := tv.renewAndGetSigningKey(jt)
+	_, err := tv.renewAndGetSigningKey(nil, jt)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, nil)
 
@@ -431,7 +434,7 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeySucceeds(t *tes
 
 	go func() {
 		sm.assertFlushCachedSigningKeys(anything, nil)
-		sm.assertGetSigningKey(anything, anything, []byte(esk), nil)
+		sm.assertGetSigningKey(nil, anything, anything, []byte(esk), nil)
 		kp.assertParse([]byte(esk), pk, nil)
 		sm.close()
 		kp.close()
@@ -441,7 +444,7 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeySucceeds(t *tes
 	jt.Claims.(jwt.MapClaims)["iss"] = ""
 	jt.Header["kid"] = ""
 
-	rsk, err := tv.renewAndGetSigningKey(jt)
+	rsk, err := tv.renewAndGetSigningKey(nil, jt)
 
 	if err != nil {
 		t.Error("An error was returned but not expected.", err)
@@ -463,7 +466,7 @@ func Test_validate_WhenParserReturnsErrorFirstTime(t *testing.T) {
 		jm.close()
 	}()
 
-	_, err := tv.validate(anything)
+	_, err := tv.validate(nil, anything)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
 
@@ -480,7 +483,7 @@ func Test_validate_WhenParserSuceedsFirstTime(t *testing.T) {
 		jm.close()
 	}()
 
-	rjt, err := tv.validate(anything)
+	rjt, err := tv.validate(nil, anything)
 
 	if err != nil {
 		t.Error("Unexpected error was returned.", err)
@@ -506,7 +509,7 @@ func Test_validate_WhenParserReturnsErrorSecondTime(t *testing.T) {
 		jm.close()
 	}()
 
-	_, err := tv.validate(anything)
+	_, err := tv.validate(nil, anything)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
 
@@ -525,7 +528,7 @@ func Test_validate_WhenParserReturnsSignatureInvalidErrorSecondTime(t *testing.T
 		jm.close()
 	}()
 
-	_, err := tv.validate(anything)
+	_, err := tv.validate(nil, anything)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
 
@@ -545,7 +548,7 @@ func Test_validate_WhenParserSuceedsSecondTime(t *testing.T) {
 		jm.close()
 	}()
 
-	rjt, err := tv.validate(anything)
+	rjt, err := tv.validate(nil, anything)
 
 	if err != nil {
 		t.Error("Unexpected error was returned.", err)

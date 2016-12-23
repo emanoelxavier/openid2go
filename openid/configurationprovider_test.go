@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -14,18 +15,19 @@ type testBody struct {
 
 func (testBody) Close() error { return nil }
 
-func Test_getConfiguration_UsesCorrectUrl(t *testing.T) {
+func Test_getConfiguration_UsesCorrectUrlAndRequest(t *testing.T) {
 	c := NewHTTPClientMock(t)
 	configurationProvider := httpConfigurationProvider{getConfig: c.httpGet}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	issuer := "https://test"
 	configSuffix := "/.well-known/openid-configuration"
 	go func() {
-		c.assertHttpGet(issuer+configSuffix, nil, errors.New("Read configuration error"))
+		c.assertHTTPGet(req, issuer+configSuffix, nil, errors.New("Read configuration error"))
 		c.close()
 	}()
 
-	_, e := configurationProvider.getConfiguration(issuer)
+	_, e := configurationProvider.getConfiguration(req, issuer)
 
 	if e == nil {
 		t.Error("An error was expected but not returned")
@@ -40,11 +42,11 @@ func Test_getConfiguration_WhenGetReturnsError(t *testing.T) {
 
 	readError := errors.New("Read configuration error")
 	go func() {
-		c.assertHttpGet(anything, nil, readError)
+		c.assertHTTPGet(nil, anything, nil, readError)
 		c.close()
 	}()
 
-	_, e := configurationProvider.getConfiguration("issuer")
+	_, e := configurationProvider.getConfiguration(nil, "issuer")
 
 	expectValidationError(t, e, ValidationErrorGetOpenIdConfigurationFailure, http.StatusUnauthorized, readError)
 
@@ -59,12 +61,12 @@ func Test_getConfiguration_WhenGetSucceeds(t *testing.T) {
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(anything, resp, nil)
+		c.assertHTTPGet(nil, anything, resp, nil)
 		c.assertDecodeResponse(respBody, nil, nil)
 		c.close()
 	}()
 
-	_, e := configurationProvider.getConfiguration(anything)
+	_, e := configurationProvider.getConfiguration(nil, anything)
 
 	if e != nil {
 		t.Error("An error was returned but not expected", e)
@@ -81,12 +83,12 @@ func Test_getConfiguration_WhenDecodeResponseReturnsError(t *testing.T) {
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(anything, resp, nil)
+		c.assertHTTPGet(nil, anything, resp, nil)
 		c.assertDecodeResponse(anything, nil, decodeError)
 		c.close()
 	}()
 
-	_, e := configurationProvider.getConfiguration(anything)
+	_, e := configurationProvider.getConfiguration(nil, anything)
 
 	expectValidationError(t, e, ValidationErrorDecodeOpenIdConfigurationFailure, http.StatusUnauthorized, decodeError)
 
@@ -101,12 +103,12 @@ func Test_getConfiguration_WhenDecodeResponseSucceeds(t *testing.T) {
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
 	go func() {
-		c.assertHttpGet(anything, resp, nil)
+		c.assertHTTPGet(nil, anything, resp, nil)
 		c.assertDecodeResponse(anything, config, nil)
 		c.close()
 	}()
 
-	rc, e := configurationProvider.getConfiguration(anything)
+	rc, e := configurationProvider.getConfiguration(nil, anything)
 
 	if e != nil {
 		t.Error("An error was returned but not expected", e)
@@ -116,8 +118,8 @@ func Test_getConfiguration_WhenDecodeResponseSucceeds(t *testing.T) {
 		t.Error("Expected issuer", config.Issuer, "but was", rc.Issuer)
 	}
 
-	if rc.JwksUri != config.JwksUri {
-		t.Error("Expected jwks uri", config.JwksUri, "but was", rc.JwksUri)
+	if rc.JwksURI != config.JwksURI {
+		t.Error("Expected jwks uri", config.JwksURI, "but was", rc.JwksURI)
 	}
 
 	c.assertDone()

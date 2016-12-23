@@ -42,7 +42,7 @@ func Test_authenticateUser_WhenGetIDTokenReturnsError_WhenErrorHandlerHalts(t *t
 func Test_authenticateUser_WhenValidateReturnsError_WhenErrorHandlerHalts(t *testing.T) {
 	vm, c := createConfiguration(t, errorHandlerHalt, getIDTokenReturnsSuccess)
 	go func() {
-		vm.assertValidate(idToken, nil, errors.New("Error while validating the token."))
+		vm.assertValidate(idToken, nil, errors.New("Error while validating the token"))
 		vm.close()
 	}()
 
@@ -107,7 +107,7 @@ func createConfiguration(t *testing.T, eh ErrorHandlerFunc, gt GetIDTokenFunc) (
 }
 
 func getIDTokenReturnsError(r *http.Request) (string, error) {
-	return "", errors.New("An error happened when returning ID Token.")
+	return "", errors.New("An error happened when returning ID Token")
 }
 
 func getIDTokenReturnsSuccess(r *http.Request) (string, error) {

@@ -37,7 +37,10 @@ type GetProvidersFunc func() ([]Provider, error)
 
 func (ps providers) validate() error {
 	if len(ps) == 0 {
-		return &SetupError{Code: SetupErrorEmptyProviderCollection, Message: "The collection of providers must contain at least one element."}
+		return &SetupError{
+			Code:    SetupErrorEmptyProviderCollection,
+			Message: "The collection of providers must contain at least one element.",
+		}
 	}
 
 	for _, p := range ps {
@@ -63,7 +66,10 @@ func (p Provider) validate() error {
 
 func validateProviderIssuer(iss string) error {
 	if iss == "" {
-		return &SetupError{Code: SetupErrorInvalidIssuer, Message: "Empty string issuer not allowed."}
+		return &SetupError{
+			Code:    SetupErrorInvalidIssuer,
+			Message: "Empty string issuer not allowed.",
+		}
 	}
 
 	// TODO: Validate that the issuer format complies with openid spec.
@@ -72,7 +78,10 @@ func validateProviderIssuer(iss string) error {
 
 func validateProviderClientIDs(cIDs []string) error {
 	if len(cIDs) == 0 {
-		return &SetupError{Code: SetupErrorInvalidClientIDs, Message: "At leat one client id must be provided."}
+		return &SetupError{
+			Code:    SetupErrorInvalidClientIDs,
+			Message: "At leat one client id must be provided.",
+		}
 	}
 
 	return nil

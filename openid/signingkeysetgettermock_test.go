@@ -1,6 +1,9 @@
 package openid
 
-import "testing"
+import (
+	"net/http"
+	"testing"
+)
 
 type signingKeySetGetterMock struct {
 	t     *testing.T
@@ -20,7 +23,7 @@ type getSigningKeySetResponse struct {
 	err  error
 }
 
-func (c *signingKeySetGetterMock) getSigningKeySet(iss string) ([]signingKey, error) {
+func (c *signingKeySetGetterMock) getSigningKeySet(r *http.Request, iss string) ([]signingKey, error) {
 	c.Calls <- &getSigningKeySetCall{iss}
 	sr := (<-c.Calls).(*getSigningKeySetResponse)
 	return sr.keys, sr.err

@@ -1,6 +1,7 @@
 package openid
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/square/go-jose"
@@ -16,6 +17,7 @@ func newJwksGetterMock(t *testing.T) *jwksGetterMock {
 }
 
 type getJwksCall struct {
+	req *http.Request
 	url string
 }
 
@@ -24,14 +26,17 @@ type getJwksResponse struct {
 	err  error
 }
 
-func (c *jwksGetterMock) getJwkSet(url string) (jose.JsonWebKeySet, error) {
-	c.Calls <- &getJwksCall{url}
+func (c *jwksGetterMock) getJwkSet(r *http.Request, url string) (jose.JsonWebKeySet, error) {
+	c.Calls <- &getJwksCall{r, url}
 	gr := (<-c.Calls).(*getJwksResponse)
 	return gr.jwks, gr.err
 }
 
-func (c *jwksGetterMock) assertGetJwks(url string, jwks jose.JsonWebKeySet, err error) {
+func (c *jwksGetterMock) assertGetJwks(req *http.Request, url string, jwks jose.JsonWebKeySet, err error) {
 	call := (<-c.Calls).(*getJwksCall)
+	if call.req != req {
+		c.t.Error("Expected getSigningKey with req", req, "but was", call.req)
+	}
 	if url != anything && call.url != url {
 		c.t.Error("Expected getJwks with", url, "but was", call.url)
 	}

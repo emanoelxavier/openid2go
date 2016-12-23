@@ -22,8 +22,8 @@ type option func(*Configuration) error
 // returns an error then NewConfiguration will return a nil configuration and that error.
 func NewConfiguration(options ...option) (*Configuration, error) {
 	m := new(Configuration)
-	cp := newHTTPConfigurationProvider(http.Get, jsonDecodeResponse)
-	jp := newHTTPJwksProvider(http.Get, jsonDecodeResponse)
+	cp := newHTTPConfigurationProvider(defaultHTTPGet, jsonDecodeResponse)
+	jp := newHTTPJwksProvider(defaultHTTPGet, jsonDecodeResponse)
 	ksp := newSigningKeySetProvider(cp, jp, pemEncodePublicKey)
 	kp := newSigningKeyProvider(ksp)
 	m.tokenValidator = newIDTokenValidator(nil, jwt.Parse, kp, jwt.ParseRSAPublicKeyFromPEM)
@@ -54,6 +54,28 @@ func ProvidersGetter(pg GetProvidersFunc) func(*Configuration) error {
 func ErrorHandler(eh ErrorHandlerFunc) func(*Configuration) error {
 	return func(c *Configuration) error {
 		c.errorHandler = eh
+		return nil
+	}
+}
+
+// HTTPGetFunc is a function that gets a URL based on a contextual request
+// and a target URL. The default behavior is the http.Get method, ignoring
+// the request parameter.
+type HTTPGetFunc func(r *http.Request, url string) (*http.Response, error)
+
+var defaultHTTPGet = func(r *http.Request, url string) (*http.Response, error) {
+	return http.Get(url)
+}
+
+// The HTTPGetter option registers the function responsible for returning the
+// providers containing the valid issuer and client IDs used to validate the ID Token.
+func HTTPGetter(hg HTTPGetFunc) func(*Configuration) error {
+	return func(c *Configuration) error {
+		sksp := c.tokenValidator.(*idTokenValidator).
+			keyGetter.(*signingKeyProvider).
+			keySetGetter.(*signingKeySetProvider)
+		sksp.configGetter.(*httpConfigurationProvider).getConfig = hg
+		sksp.jwksGetter.(*httpJwksProvider).getJwks = hg
 		return nil
 	}
 }
@@ -107,7 +129,7 @@ func authenticate(c *Configuration, rw http.ResponseWriter, req *http.Request) (
 		return nil, eh(err, rw, req)
 	}
 
-	vt, err := c.tokenValidator.validate(ts)
+	vt, err := c.tokenValidator.validate(req, ts)
 
 	if err != nil {
 		return nil, eh(err, rw, req)

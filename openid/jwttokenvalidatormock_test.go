@@ -1,6 +1,7 @@
 package openid
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/dgrijalva/jwt-go"
@@ -16,7 +17,8 @@ func newJwtTokenValidatorMock(t *testing.T) *jwtTokenValidatorMock {
 }
 
 type validateCall struct {
-	t string
+	req *http.Request
+	t   string
 }
 
 type validateResp struct {
@@ -24,8 +26,8 @@ type validateResp struct {
 	err error
 }
 
-func (j *jwtTokenValidatorMock) validate(t string) (*jwt.Token, error) {
-	j.Calls <- &validateCall{t}
+func (j *jwtTokenValidatorMock) validate(r *http.Request, t string) (*jwt.Token, error) {
+	j.Calls <- &validateCall{r, t}
 	vr := (<-j.Calls).(*validateResp)
 	return vr.jt, vr.err
 }
