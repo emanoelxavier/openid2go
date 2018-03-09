@@ -22,17 +22,17 @@ type getJwksCall struct {
 }
 
 type getJwksResponse struct {
-	jwks jose.JsonWebKeySet
+	jwks jose.JSONWebKeySet
 	err  error
 }
 
-func (c *jwksGetterMock) getJwkSet(r *http.Request, url string) (jose.JsonWebKeySet, error) {
+func (c *jwksGetterMock) getJwkSet(r *http.Request, url string) (jose.JSONWebKeySet, error) {
 	c.Calls <- &getJwksCall{r, url}
 	gr := (<-c.Calls).(*getJwksResponse)
 	return gr.jwks, gr.err
 }
 
-func (c *jwksGetterMock) assertGetJwks(req *http.Request, url string, jwks jose.JsonWebKeySet, err error) {
+func (c *jwksGetterMock) assertGetJwks(req *http.Request, url string, jwks jose.JSONWebKeySet, err error) {
 	call := (<-c.Calls).(*getJwksCall)
 	if call.req != req {
 		c.t.Error("Expected getSigningKey with req", req, "but was", call.req)
