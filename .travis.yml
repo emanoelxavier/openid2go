@@ -2,7 +2,7 @@ language: go
 
 script:
 #    - go vet ./...
-    - go test -v ./...
+    - go test -v ./openid
 
 go:
   - 1.9
