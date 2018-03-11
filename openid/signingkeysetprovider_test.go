@@ -39,7 +39,7 @@ func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		configGetter.close()
-		jwksGetter.assertGetJwks(req, anything, jose.JsonWebKeySet{}, ee)
+		jwksGetter.assertGetJwks(req, anything, jose.JSONWebKeySet{}, ee)
 		jwksGetter.close()
 
 	}()
@@ -64,7 +64,7 @@ func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		configGetter.close()
-		jwksGetter.assertGetJwks(nil, anything, jose.JsonWebKeySet{}, nil)
+		jwksGetter.assertGetJwks(nil, anything, jose.JSONWebKeySet{}, nil)
 		jwksGetter.close()
 
 	}()
@@ -85,7 +85,7 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 	configGetter, jwksGetter, pemEncoder, skProv := createSigningKeySetProvider(t)
 
 	ee := &ValidationError{Code: ValidationErrorMarshallingKey, HTTPStatus: http.StatusInternalServerError}
-	ejwks := jose.JsonWebKeySet{Keys: []jose.JsonWebKey{{Key: nil}}}
+	ejwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{Key: nil}}}
 
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
@@ -113,15 +113,15 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 	configGetter, jwksGetter, pemEncoder, skProv := createSigningKeySetProvider(t)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
-	keys := make([]jose.JsonWebKey, 2)
+	keys := make([]jose.JSONWebKey, 2)
 	encryptedKeys := make([]signingKey, 2)
 
 	for i := 0; i < cap(keys); i = i + 1 {
-		keys[i] = jose.JsonWebKey{KeyID: fmt.Sprintf("%v", i), Key: i}
+		keys[i] = jose.JSONWebKey{KeyID: fmt.Sprintf("%v", i), Key: i}
 		encryptedKeys[i] = signingKey{keyID: fmt.Sprintf("%v", i), key: []byte(fmt.Sprintf("%v", i))}
 	}
 
-	ejwks := jose.JsonWebKeySet{Keys: keys}
+	ejwks := jose.JSONWebKeySet{Keys: keys}
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		jwksGetter.assertGetJwks(req, anything, ejwks, nil)
