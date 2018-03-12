@@ -1,7 +1,7 @@
 language: go
 
 env:
-  - DEP_VERSION="X.X.X"
+  - DEP_VERSION="0.4.1"
 
 go:
   - "1.9.x"
