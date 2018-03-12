@@ -16,6 +16,6 @@ before_install:
 install:
   - dep ensure
   
-  script:
-    - go vet ./...
-    - go test -v ./openid
+script:
+  - go vet ./...
+  - go test -v ./openid
