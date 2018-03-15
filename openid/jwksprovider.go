@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/square/go-jose"
+	jose "gopkg.in/square/go-jose.v2"
 )
 
 type jwksGetter interface {
