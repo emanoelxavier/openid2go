@@ -11,13 +11,13 @@ const wellKnownOpenIDConfiguration = "/.well-known/openid-configuration"
 
 type decodeResponseFunc func(io.Reader, interface{}) error
 
-type configurationGetter interface { // Getter
+type configurationGetter interface {
 	getConfiguration(r *http.Request, url string) (configuration, error)
 }
 
-type httpConfigurationProvider struct { //configurationProvider
-	getConfig    HTTPGetFunc        //httpGetter
-	decodeConfig decodeResponseFunc //responseDecoder
+type httpConfigurationProvider struct {
+	getConfig    HTTPGetFunc
+	decodeConfig decodeResponseFunc
 }
 
 func newHTTPConfigurationProvider(gc HTTPGetFunc, dc decodeResponseFunc) *httpConfigurationProvider {
