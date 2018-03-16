@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/square/go-jose"
+	"gopkg.in/square/go-jose.v2"
 )
 
 func Test_getsigningKeySet_WhenGetConfigurationReturnsError(t *testing.T) {

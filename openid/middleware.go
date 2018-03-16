@@ -16,7 +16,7 @@ type Configuration struct {
 
 type option func(*Configuration) error
 
-// The NewConfiguration creates a new instance of Configuration and returns a pointer to it.
+// NewConfiguration creates a new instance of Configuration and returns a pointer to it.
 // This function receives a collection of the function type option. Each of those functions are
 // responsible for setting some part of the returned *Configuration. If any if the option functions
 // returns an error then NewConfiguration will return a nil configuration and that error.
@@ -39,7 +39,7 @@ func NewConfiguration(options ...option) (*Configuration, error) {
 	return m, nil
 }
 
-// The ProvidersGetter option registers the function responsible for returning the
+// ProvidersGetter option registers the function responsible for returning the
 // providers containing the valid issuer and client IDs used to validate the ID Token.
 func ProvidersGetter(pg GetProvidersFunc) func(*Configuration) error {
 	return func(c *Configuration) error {
@@ -48,7 +48,7 @@ func ProvidersGetter(pg GetProvidersFunc) func(*Configuration) error {
 	}
 }
 
-// The ErrorHandler option registers the function responsible for handling
+// ErrorHandler option registers the function responsible for handling
 // the errors returned during token validation. When this option is not used then the
 // middleware will use the default internal implementation validationErrorToHTTPStatus.
 func ErrorHandler(eh ErrorHandlerFunc) func(*Configuration) error {
@@ -67,7 +67,7 @@ var defaultHTTPGet = func(r *http.Request, url string) (*http.Response, error) {
 	return http.Get(url)
 }
 
-// The HTTPGetter option registers the function responsible for returning the
+// HTTPGetter option registers the function responsible for returning the
 // providers containing the valid issuer and client IDs used to validate the ID Token.
 func HTTPGetter(hg HTTPGetFunc) func(*Configuration) error {
 	return func(c *Configuration) error {
@@ -80,7 +80,7 @@ func HTTPGetter(hg HTTPGetFunc) func(*Configuration) error {
 	}
 }
 
-// The Authenticate middleware performs the validation of the OIDC ID Token.
+// Authenticate middleware performs the validation of the OIDC ID Token.
 // If an error happens, i.e.: expired token, the next handler may or may not executed depending on the
 // provided ErrorHandlerFunc option. The default behavior, determined by validationErrorToHTTPStatus,
 // stops the execution and returns Unauthorized.
@@ -93,7 +93,7 @@ func Authenticate(conf *Configuration, h http.Handler) http.Handler {
 	})
 }
 
-// The AuthenticateUser middleware performs the validation of the OIDC ID Token and
+// AuthenticateUser middleware performs the validation of the OIDC ID Token and
 // forwards the authenticated user's information to the next handler in the pipeline.
 // If an error happens, i.e.: expired token, the next handler may or may not executed depending on the
 // provided ErrorHandlerFunc option. The default behavior, determined by validationErrorToHTTPStatus,
@@ -148,10 +148,10 @@ func authenticateUser(c *Configuration, rw http.ResponseWriter, req *http.Reques
 		eh = c.errorHandler
 	}
 
-	if t, h := authenticate(c, rw, req); h {
-		return nil, h
-	} else {
+	if t, halt := authenticate(c, rw, req); !halt {
 		vt = t
+	} else {
+		return nil, halt
 	}
 
 	u, err := newUser(vt)

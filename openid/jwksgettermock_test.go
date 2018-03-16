@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/square/go-jose"
+	"gopkg.in/square/go-jose.v2"
 )
 
 type jwksGetterMock struct {

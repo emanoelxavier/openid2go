@@ -57,11 +57,7 @@ func (p Provider) validate() error {
 		return err
 	}
 
-	if err := validateProviderClientIDs(p.ClientIDs); err != nil {
-		return err
-	}
-
-	return nil
+	return validateProviderClientIDs(p.ClientIDs)
 }
 
 func validateProviderIssuer(iss string) error {
