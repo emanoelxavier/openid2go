@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"gopkg.in/square/go-jose.v2"
 )
 
@@ -36,12 +37,11 @@ func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
 
 	ee := &ValidationError{Code: ValidationErrorGetJwksFailure, HTTPStatus: http.StatusUnauthorized}
 
+	jwksGetter.On("getJwkSet", req, mock.Anything).Return(jose.JSONWebKeySet{}, ee)
+
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		configGetter.close()
-		jwksGetter.assertGetJwks(req, anything, jose.JSONWebKeySet{}, ee)
-		jwksGetter.close()
-
 	}()
 
 	sk, re := skProv.getSigningKeySet(req, anything)
@@ -53,7 +53,7 @@ func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
 	}
 
 	configGetter.assertDone()
-	jwksGetter.assertDone()
+	jwksGetter.AssertExpectations(t)
 }
 
 func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
@@ -61,12 +61,10 @@ func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 
 	ee := &ValidationError{Code: ValidationErrorEmptyJwk, HTTPStatus: http.StatusUnauthorized}
 
+	jwksGetter.On("getJwkSet", (*http.Request)(nil), mock.Anything).Return(jose.JSONWebKeySet{}, nil)
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		configGetter.close()
-		jwksGetter.assertGetJwks(nil, anything, jose.JSONWebKeySet{}, nil)
-		jwksGetter.close()
-
 	}()
 
 	sk, re := skProv.getSigningKeySet(nil, anything)
@@ -78,7 +76,7 @@ func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 	}
 
 	configGetter.assertDone()
-	jwksGetter.assertDone()
+	jwksGetter.AssertExpectations(t)
 }
 
 func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
@@ -87,11 +85,11 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 	ee := &ValidationError{Code: ValidationErrorMarshallingKey, HTTPStatus: http.StatusInternalServerError}
 	ejwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{Key: nil}}}
 
+	jwksGetter.On("getJwkSet", (*http.Request)(nil), mock.Anything).Return(ejwks, nil)
+
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		configGetter.close()
-		jwksGetter.assertGetJwks(nil, anything, ejwks, nil)
-		jwksGetter.close()
 		pemEncoder.assertPEMEncodePublicKey(nil, nil, ee)
 		pemEncoder.close()
 	}()
@@ -105,7 +103,7 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 	}
 
 	configGetter.assertDone()
-	jwksGetter.assertDone()
+	jwksGetter.AssertExpectations(t)
 	pemEncoder.assertDone()
 }
 
@@ -122,14 +120,15 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 	}
 
 	ejwks := jose.JSONWebKeySet{Keys: keys}
+
+	jwksGetter.On("getJwkSet", req, mock.Anything).Return(ejwks, nil)
+
 	go func() {
 		configGetter.assertGetConfiguration(anything, configuration{}, nil)
-		jwksGetter.assertGetJwks(req, anything, ejwks, nil)
 		for i, encryptedKey := range encryptedKeys {
 			pemEncoder.assertPEMEncodePublicKey(keys[i].Key, encryptedKey.key, nil)
 		}
 		configGetter.close()
-		jwksGetter.close()
 		pemEncoder.close()
 	}()
 
@@ -157,14 +156,13 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 	}
 
 	configGetter.assertDone()
-	jwksGetter.assertDone()
+	jwksGetter.AssertExpectations(t)
 	pemEncoder.assertDone()
-
 }
 
-func createSigningKeySetProvider(t *testing.T) (*configurationGetterMock, *jwksGetterMock, *pemEncoderMock, signingKeySetProvider) {
+func createSigningKeySetProvider(t *testing.T) (*configurationGetterMock, *mockJwksGetter, *pemEncoderMock, signingKeySetProvider) {
 	configGetter := newConfigurationGetterMock(t)
-	jwksGetter := newJwksGetterMock(t)
+	jwksGetter := &mockJwksGetter{}
 	pemEncoder := newPEMEncoderMock(t)
 
 	skProv := signingKeySetProvider{configGetter: configGetter, jwksGetter: jwksGetter, keyEncoder: pemEncoder.pemEncodePublicKey}
