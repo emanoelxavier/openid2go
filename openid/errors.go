@@ -118,7 +118,6 @@ func jwtErrorToOpenIDError(e error) *ValidationError {
 			}
 		}
 	}
-
 	return &ValidationError{
 		Code:       ValidationErrorJwtValidationUnknownFailure,
 		Message:    "Jwt token validation failed with unknown error.",

@@ -14,13 +14,9 @@ func Test_getsigningKeySet_WhenGetConfigurationReturnsError(t *testing.T) {
 	configGetter, _, _, skProv := createSigningKeySetProvider(t)
 
 	ee := &ValidationError{Code: ValidationErrorGetOpenIdConfigurationFailure, HTTPStatus: http.StatusUnauthorized}
+	configGetter.On("getConfiguration", mock.Anything).Return(configuration{}, ee)
 
-	go func() {
-		configGetter.assertGetConfiguration(anything, configuration{}, ee)
-		configGetter.close()
-	}()
-
-	sk, re := skProv.getSigningKeySet(nil, anything)
+	sk, re := skProv.getSigningKeySet(nil, mock.Anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -28,7 +24,7 @@ func Test_getsigningKeySet_WhenGetConfigurationReturnsError(t *testing.T) {
 		t.Error("The returned signing keys should be nil")
 	}
 
-	configGetter.assertDone()
+	configGetter.AssertExpectations(t)
 }
 
 func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
@@ -39,12 +35,9 @@ func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
 
 	jwksGetter.On("getJwkSet", req, mock.Anything).Return(jose.JSONWebKeySet{}, ee)
 
-	go func() {
-		configGetter.assertGetConfiguration(anything, configuration{}, nil)
-		configGetter.close()
-	}()
+	configGetter.On("getConfiguration", mock.Anything).Return(configuration{}, nil)
 
-	sk, re := skProv.getSigningKeySet(req, anything)
+	sk, re := skProv.getSigningKeySet(req, mock.Anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -52,7 +45,7 @@ func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
 		t.Error("The returned signing keys should be nil")
 	}
 
-	configGetter.assertDone()
+	configGetter.AssertExpectations(t)
 	jwksGetter.AssertExpectations(t)
 }
 
@@ -62,12 +55,9 @@ func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 	ee := &ValidationError{Code: ValidationErrorEmptyJwk, HTTPStatus: http.StatusUnauthorized}
 
 	jwksGetter.On("getJwkSet", (*http.Request)(nil), mock.Anything).Return(jose.JSONWebKeySet{}, nil)
-	go func() {
-		configGetter.assertGetConfiguration(anything, configuration{}, nil)
-		configGetter.close()
-	}()
+	configGetter.On("getConfiguration", mock.Anything).Return(configuration{}, nil)
 
-	sk, re := skProv.getSigningKeySet(nil, anything)
+	sk, re := skProv.getSigningKeySet(nil, mock.Anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -75,7 +65,7 @@ func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 		t.Error("The returned signing keys should be nil")
 	}
 
-	configGetter.assertDone()
+	configGetter.AssertExpectations(t)
 	jwksGetter.AssertExpectations(t)
 }
 
@@ -86,15 +76,14 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 	ejwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{Key: nil}}}
 
 	jwksGetter.On("getJwkSet", (*http.Request)(nil), mock.Anything).Return(ejwks, nil)
+	configGetter.On("getConfiguration", mock.Anything).Return(configuration{}, nil)
 
 	go func() {
-		configGetter.assertGetConfiguration(anything, configuration{}, nil)
-		configGetter.close()
 		pemEncoder.assertPEMEncodePublicKey(nil, nil, ee)
 		pemEncoder.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(nil, anything)
+	sk, re := skProv.getSigningKeySet(nil, mock.Anything)
 
 	expectValidationError(t, re, ee.Code, ee.HTTPStatus, nil)
 
@@ -102,7 +91,7 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsError(t *testing.T) {
 		t.Error("The returned signing keys should be nil")
 	}
 
-	configGetter.assertDone()
+	configGetter.AssertExpectations(t)
 	jwksGetter.AssertExpectations(t)
 	pemEncoder.assertDone()
 }
@@ -122,17 +111,16 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 	ejwks := jose.JSONWebKeySet{Keys: keys}
 
 	jwksGetter.On("getJwkSet", req, mock.Anything).Return(ejwks, nil)
+	configGetter.On("getConfiguration", mock.Anything).Return(configuration{}, nil)
 
 	go func() {
-		configGetter.assertGetConfiguration(anything, configuration{}, nil)
 		for i, encryptedKey := range encryptedKeys {
 			pemEncoder.assertPEMEncodePublicKey(keys[i].Key, encryptedKey.key, nil)
 		}
-		configGetter.close()
 		pemEncoder.close()
 	}()
 
-	sk, re := skProv.getSigningKeySet(req, anything)
+	sk, re := skProv.getSigningKeySet(req, mock.Anything)
 
 	if re != nil {
 		t.Error("An error was returned but not expected.")
@@ -155,13 +143,13 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 		}
 	}
 
-	configGetter.assertDone()
+	configGetter.AssertExpectations(t)
 	jwksGetter.AssertExpectations(t)
 	pemEncoder.assertDone()
 }
 
-func createSigningKeySetProvider(t *testing.T) (*configurationGetterMock, *mockJwksGetter, *pemEncoderMock, signingKeySetProvider) {
-	configGetter := newConfigurationGetterMock(t)
+func createSigningKeySetProvider(t *testing.T) (*mockConfigurationGetter, *mockJwksGetter, *pemEncoderMock, signingKeySetProvider) {
+	configGetter := &mockConfigurationGetter{}
 	jwksGetter := &mockJwksGetter{}
 	pemEncoder := newPEMEncoderMock(t)
 
