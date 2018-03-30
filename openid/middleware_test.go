@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/stretchr/testify/mock"
 )
 
 const idToken string = "IDTOKEN"
@@ -41,10 +42,7 @@ func Test_authenticateUser_WhenGetIDTokenReturnsError_WhenErrorHandlerHalts(t *t
 
 func Test_authenticateUser_WhenValidateReturnsError_WhenErrorHandlerHalts(t *testing.T) {
 	vm, c := createConfiguration(t, errorHandlerHalt, getIDTokenReturnsSuccess)
-	go func() {
-		vm.assertValidate(idToken, nil, errors.New("Error while validating the token"))
-		vm.close()
-	}()
+	vm.On("validate", mock.Anything, idToken).Return(nil, errors.New("Error while validating the token"))
 
 	u, halt := authenticateUser(c, httptest.NewRecorder(), nil)
 
@@ -56,7 +54,7 @@ func Test_authenticateUser_WhenValidateReturnsError_WhenErrorHandlerHalts(t *tes
 		t.Error("The authentication should have returned 'halt' true.")
 	}
 
-	vm.assertDone()
+	vm.AssertExpectations(t)
 }
 
 func Test_authenticateUser_WhenValidateSucceeds(t *testing.T) {
@@ -68,10 +66,7 @@ func Test_authenticateUser_WhenValidateSucceeds(t *testing.T) {
 	jt.Claims.(jwt.MapClaims)["iss"] = iss
 	jt.Claims.(jwt.MapClaims)["sub"] = sub
 
-	go func() {
-		vm.assertValidate(idToken, jt, nil)
-		vm.close()
-	}()
+	vm.On("validate", mock.Anything, idToken).Return(jt, nil)
 
 	u, halt := authenticateUser(c, httptest.NewRecorder(), nil)
 
@@ -95,11 +90,11 @@ func Test_authenticateUser_WhenValidateSucceeds(t *testing.T) {
 		t.Error("Expected number of user claims", len(jt.Claims.(jwt.MapClaims)), ", but got", len(u.Claims))
 	}
 
-	vm.assertDone()
+	vm.AssertExpectations(t)
 }
 
-func createConfiguration(t *testing.T, eh ErrorHandlerFunc, gt GetIDTokenFunc) (*jwtTokenValidatorMock, *Configuration) {
-	jm := newJwtTokenValidatorMock(t)
+func createConfiguration(t *testing.T, eh ErrorHandlerFunc, gt GetIDTokenFunc) (*mockJwtTokenValidator, *Configuration) {
+	jm := &mockJwtTokenValidator{}
 	c, _ := NewConfiguration(ErrorHandler(eh))
 	c.tokenValidator = jm
 	c.idTokenGetter = gt
