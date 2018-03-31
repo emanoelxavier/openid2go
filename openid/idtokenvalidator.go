@@ -18,21 +18,30 @@ type jwtTokenValidator interface {
 }
 
 type jwtParserFunc func(string, jwt.Keyfunc) (*jwt.Token, error)
+
+type jwtParser interface {
+	parse(string, jwt.Keyfunc) (*jwt.Token, error)
+}
+
+func (p jwtParserFunc) parse(token string, keyFunc jwt.Keyfunc) (*jwt.Token, error) {
+	return p(token, keyFunc)
+}
+
 type pemToRSAPublicKeyParserFunc func(key []byte) (*rsa.PublicKey, error)
 
 type idTokenValidator struct {
 	provGetter GetProvidersFunc
-	jwtParser  jwtParserFunc
+	jwtParser  jwtParser
 	keyGetter  signingKeyGetter
 	rsaParser  pemToRSAPublicKeyParserFunc
 }
 
-func newIDTokenValidator(pg GetProvidersFunc, jp jwtParserFunc, kg signingKeyGetter, kp pemToRSAPublicKeyParserFunc) *idTokenValidator {
+func newIDTokenValidator(pg GetProvidersFunc, jp jwtParser, kg signingKeyGetter, kp pemToRSAPublicKeyParserFunc) *idTokenValidator {
 	return &idTokenValidator{pg, jp, kg, kp}
 }
 
 func (tv *idTokenValidator) validate(r *http.Request, t string) (*jwt.Token, error) {
-	jt, err := tv.jwtParser(t, func(tok *jwt.Token) (interface{}, error) {
+	jt, err := tv.jwtParser.parse(t, func(tok *jwt.Token) (interface{}, error) {
 		return tv.getSigningKey(r, tok)
 	})
 	if err != nil {
@@ -41,7 +50,7 @@ func (tv *idTokenValidator) validate(r *http.Request, t string) (*jwt.Token, err
 			// If the signing key did not match it may be because the in memory key is outdated.
 			// Renew the cached signing key.
 			if (verr.Errors & jwt.ValidationErrorSignatureInvalid) != 0 {
-				jt, err = tv.jwtParser(t, func(tok *jwt.Token) (interface{}, error) {
+				jt, err = tv.jwtParser.parse(t, func(tok *jwt.Token) (interface{}, error) {
 					return tv.renewAndGetSigningKey(r, tok)
 				})
 			}
