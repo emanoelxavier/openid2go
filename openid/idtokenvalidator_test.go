@@ -256,10 +256,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.
 
 	sm.On("getSigningKey", req, iss, keyID).Return([]byte(esk), nil)
 	pm.On("get").Return([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
-	go func() {
-		kp.assertParse([]byte(esk), pk, nil)
-		kp.close()
-	}()
+	kp.On("parse", []byte(esk)).Return(pk, nil)
 
 	jt := jwt.New(jwt.SigningMethodRS256)
 	jt.Claims.(jwt.MapClaims)["iss"] = iss
@@ -277,6 +274,7 @@ func Test_getSigningKey_UsingValidToken_WhenSigningKeyGetterSucceeds(t *testing.
 
 	pm.AssertExpectations(t)
 	sm.AssertExpectations(t)
+	kp.AssertExpectations(t)
 }
 
 func Test_getSigningKey_UsingValidToken_WithoutKeyIdentifier_WhenSigningKeyGetterSucceeds(t *testing.T) {
@@ -288,10 +286,7 @@ func Test_getSigningKey_UsingValidToken_WithoutKeyIdentifier_WhenSigningKeyGette
 	pk := &rsa.PublicKey{N: nil, E: 345}
 	sm.On("getSigningKey", (*http.Request)(nil), iss, keyID).Return([]byte(esk), nil)
 	pm.On("get").Return([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
-	go func() {
-		kp.assertParse([]byte(esk), pk, nil)
-		kp.close()
-	}()
+	kp.On("parse", []byte(esk)).Return(pk, nil)
 
 	jt := jwt.New(jwt.SigningMethodRS256)
 	jt.Claims.(jwt.MapClaims)["iss"] = iss
@@ -309,6 +304,7 @@ func Test_getSigningKey_UsingValidToken_WithoutKeyIdentifier_WhenSigningKeyGette
 	pm.AssertExpectations(t)
 	sm.AssertExpectations(t)
 	sm.AssertExpectations(t)
+	kp.AssertExpectations(t)
 }
 
 func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
@@ -321,10 +317,7 @@ func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
 
 	sm.On("getSigningKey", (*http.Request)(nil), iss, keyID).Return([]byte(esk), nil)
 	pm.On("get").Return([]Provider{{Issuer: iss, ClientIDs: []string{"client"}}}, nil)
-	go func() {
-		kp.assertParse([]byte(esk), pk, nil)
-		kp.close()
-	}()
+	kp.On("parse", []byte(esk)).Return(pk, nil)
 
 	jt := jwt.New(jwt.SigningMethodRS256)
 	jt.Claims.(jwt.MapClaims)["iss"] = iss
@@ -342,6 +335,7 @@ func Test_getSigningKey_UsingValidTokenWithMultipleAudiences(t *testing.T) {
 
 	pm.AssertExpectations(t)
 	sm.AssertExpectations(t)
+	kp.AssertExpectations(t)
 }
 
 func Test_renewAndGetSigningKey_UsingValidToken_WhenFlushCachedSigningKeysReturnsError(t *testing.T) {
@@ -385,11 +379,7 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeySucceeds(t *tes
 
 	sm.On("getSigningKey", (*http.Request)(nil), mock.Anything, mock.Anything).Return([]byte(esk), nil)
 	sm.On("flushCachedSigningKeys", mock.Anything).Return(nil)
-
-	go func() {
-		kp.assertParse([]byte(esk), pk, nil)
-		kp.close()
-	}()
+	kp.On("parse", []byte(esk)).Return(pk, nil)
 
 	jt := jwt.New(jwt.SigningMethodRS256)
 	jt.Claims.(jwt.MapClaims)["iss"] = ""
@@ -403,6 +393,7 @@ func Test_renewAndGetSigningKey_UsingValidToken_WhenGetSigningKeySucceeds(t *tes
 
 	expectSigningKey(t, rsk, jt, pk)
 	sm.AssertExpectations(t)
+	kp.AssertExpectations(t)
 }
 
 func Test_validate_WhenParserReturnsErrorFirstTime(t *testing.T) {
@@ -511,10 +502,10 @@ func expectSigningKey(t *testing.T, rsk interface{}, jt *jwt.Token, esk *rsa.Pub
 	}
 }
 
-func createIDTokenValidator(t *testing.T) (*mockProvidersGetter, *mockJwtParser, *mockSigningKeyGetter, *rsaParserMock, *idTokenValidator) {
+func createIDTokenValidator(t *testing.T) (*mockProvidersGetter, *mockJwtParser, *mockSigningKeyGetter, *mockPemToRSAPublicKeyParser, *idTokenValidator) {
 	pm := &mockProvidersGetter{}
 	jm := &mockJwtParser{}
 	sm := &mockSigningKeyGetter{}
-	kp := newRSAParserMock(t)
-	return pm, jm, sm, kp, &idTokenValidator{pm, jm, sm, kp.parse}
+	kp := &mockPemToRSAPublicKeyParser{}
+	return pm, jm, sm, kp, &idTokenValidator{pm, jm, sm, kp}
 }

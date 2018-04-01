@@ -17,26 +17,37 @@ type jwtTokenValidator interface {
 	validate(r *http.Request, t string) (jt *jwt.Token, err error)
 }
 
-type jwtParserFunc func(string, jwt.Keyfunc) (*jwt.Token, error)
-
 type jwtParser interface {
 	parse(string, jwt.Keyfunc) (*jwt.Token, error)
 }
+
+type jwtParserFunc func(string, jwt.Keyfunc) (*jwt.Token, error)
 
 func (p jwtParserFunc) parse(token string, keyFunc jwt.Keyfunc) (*jwt.Token, error) {
 	return p(token, keyFunc)
 }
 
-type pemToRSAPublicKeyParserFunc func(key []byte) (*rsa.PublicKey, error)
+type pemToRSAPublicKeyParser interface {
+	parse(key []byte) (*rsa.PublicKey, error)
+}
+
+type defaultPemToRSAPublicKeyParser struct {
+}
+
+func (p *defaultPemToRSAPublicKeyParser) parse(key []byte) (*rsa.PublicKey, error) {
+	return jwt.ParseRSAPublicKeyFromPEM(key)
+}
+
+// type pemToRSAPublicKeyParserFunc func(key []byte) (*rsa.PublicKey, error)
 
 type idTokenValidator struct {
 	provGetter providersGetter
 	jwtParser  jwtParser
 	keyGetter  signingKeyGetter
-	rsaParser  pemToRSAPublicKeyParserFunc
+	rsaParser  pemToRSAPublicKeyParser
 }
 
-func newIDTokenValidator(pg GetProvidersFunc, jp jwtParser, kg signingKeyGetter, kp pemToRSAPublicKeyParserFunc) *idTokenValidator {
+func newIDTokenValidator(pg GetProvidersFunc, jp jwtParser, kg signingKeyGetter, kp pemToRSAPublicKeyParser) *idTokenValidator {
 	return &idTokenValidator{pg, jp, kg, kp}
 }
 
@@ -77,7 +88,7 @@ func (tv *idTokenValidator) renewAndGetSigningKey(r *http.Request, jt *jwt.Token
 
 	var key []byte
 	if key, err = tv.keyGetter.getSigningKey(r, iss, kid); err == nil {
-		return tv.rsaParser(key)
+		return tv.rsaParser.parse(key)
 	}
 
 	return nil, err
@@ -111,7 +122,7 @@ func (tv *idTokenValidator) getSigningKey(r *http.Request, jt *jwt.Token) (inter
 
 	var key []byte
 	if key, err = tv.keyGetter.getSigningKey(r, p.Issuer, kid); err == nil {
-		return tv.rsaParser(key)
+		return tv.rsaParser.parse(key)
 	}
 
 	return nil, err

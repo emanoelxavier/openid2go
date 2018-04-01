@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+type Call interface{}
+
+const anything = "anything"
+
 type signingKeySetGetterMock struct {
 	t     *testing.T
 	Calls chan Call
