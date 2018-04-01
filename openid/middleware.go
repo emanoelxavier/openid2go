@@ -26,7 +26,7 @@ func NewConfiguration(options ...option) (*Configuration, error) {
 	jp := newHTTPJwksProvider(defaultHTTPGet, &jsonJwksDecoder{})
 	ksp := newSigningKeySetProvider(cp, jp, &pemPublicKeyEncoder{})
 	kp := newSigningKeyProvider(ksp)
-	m.tokenValidator = newIDTokenValidator(nil, jwtParserFunc(jwt.Parse), kp, jwt.ParseRSAPublicKeyFromPEM)
+	m.tokenValidator = newIDTokenValidator(nil, jwtParserFunc(jwt.Parse), kp, &defaultPemToRSAPublicKeyParser{})
 
 	for _, option := range options {
 		err := option(m)
