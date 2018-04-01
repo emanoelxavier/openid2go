@@ -22,8 +22,8 @@ type option func(*Configuration) error
 // returns an error then NewConfiguration will return a nil configuration and that error.
 func NewConfiguration(options ...option) (*Configuration, error) {
 	m := new(Configuration)
-	cp := newHTTPConfigurationProvider(defaultHTTPGet, jsonDecodeResponse)
-	jp := newHTTPJwksProvider(defaultHTTPGet, jsonDecodeResponse)
+	cp := newHTTPConfigurationProvider(defaultHTTPGet, &jsonConfigurationDecoder{})
+	jp := newHTTPJwksProvider(defaultHTTPGet, &jsonJwksDecoder{})
 	ksp := newSigningKeySetProvider(cp, jp, pemEncodePublicKey)
 	kp := newSigningKeyProvider(ksp)
 	m.tokenValidator = newIDTokenValidator(nil, jwtParserFunc(jwt.Parse), kp, jwt.ParseRSAPublicKeyFromPEM)
@@ -74,8 +74,8 @@ func HTTPGetter(hg HTTPGetFunc) func(*Configuration) error {
 		sksp := c.tokenValidator.(*idTokenValidator).
 			keyGetter.(*signingKeyProvider).
 			keySetGetter.(*signingKeySetProvider)
-		sksp.configGetter.(*httpConfigurationProvider).getConfig = hg
-		sksp.jwksGetter.(*httpJwksProvider).getJwks = hg
+		sksp.configGetter.(*httpConfigurationProvider).getter = hg
+		sksp.jwksGetter.(*httpJwksProvider).getter = hg
 		return nil
 	}
 }
