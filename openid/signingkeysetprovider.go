@@ -25,13 +25,13 @@ func newSigningKeySetProvider(cg configurationGetter, jg jwksGetter, ke pemEncod
 }
 
 func (signProv *signingKeySetProvider) getSigningKeySet(r *http.Request, iss string) ([]signingKey, error) {
-	conf, err := signProv.configGetter.getConfiguration(r, iss)
+	conf, err := signProv.configGetter.get(r, iss)
 
 	if err != nil {
 		return nil, err
 	}
 
-	jwks, err := signProv.jwksGetter.getJwkSet(r, conf.JwksURI)
+	jwks, err := signProv.jwksGetter.get(r, conf.JwksURI)
 
 	if err != nil {
 		return nil, err

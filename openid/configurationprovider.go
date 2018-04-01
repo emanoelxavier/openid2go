@@ -9,33 +9,39 @@ import (
 
 const wellKnownOpenIDConfiguration = "/.well-known/openid-configuration"
 
-type decodeResponseFunc func(io.Reader, interface{}) error
-
 type configurationGetter interface {
-	getConfiguration(r *http.Request, url string) (configuration, error)
+	get(r *http.Request, url string) (configuration, error)
+}
+
+type configurationDecoder interface {
+	decode(io.Reader) (configuration, error)
+}
+
+type httpGetter interface {
+	get(r *http.Request, url string) (*http.Response, error)
+}
+
+func (f HTTPGetFunc) get(r *http.Request, url string) (*http.Response, error) {
+	return f(r, url)
 }
 
 type httpConfigurationProvider struct {
-	getConfig    HTTPGetFunc
-	decodeConfig decodeResponseFunc
+	getter  httpGetter
+	decoder configurationDecoder
 }
 
-func newHTTPConfigurationProvider(gc HTTPGetFunc, dc decodeResponseFunc) *httpConfigurationProvider {
+func newHTTPConfigurationProvider(gc HTTPGetFunc, dc configurationDecoder) *httpConfigurationProvider {
 	return &httpConfigurationProvider{gc, dc}
 }
 
-func jsonDecodeResponse(r io.Reader, v interface{}) error {
-	return json.NewDecoder(r).Decode(v)
-}
-
-func (httpProv *httpConfigurationProvider) getConfiguration(r *http.Request, issuer string) (configuration, error) {
+func (httpProv *httpConfigurationProvider) get(r *http.Request, issuer string) (configuration, error) {
 	// Workaround for tokens issued by google
 	if issuer == "accounts.google.com" {
 		issuer = "https://" + issuer
 	}
 	configurationURI := issuer + wellKnownOpenIDConfiguration
 	var config configuration
-	resp, err := httpProv.getConfig(r, configurationURI)
+	resp, err := httpProv.getter.get(r, configurationURI)
 	if err != nil {
 		return config, &ValidationError{
 			Code:       ValidationErrorGetOpenIdConfigurationFailure,
@@ -47,7 +53,7 @@ func (httpProv *httpConfigurationProvider) getConfiguration(r *http.Request, iss
 
 	defer resp.Body.Close()
 
-	if err := httpProv.decodeConfig(resp.Body, &config); err != nil {
+	if config, err = httpProv.decoder.decode(resp.Body); err != nil {
 		return config, &ValidationError{
 			Code:       ValidationErrorDecodeOpenIdConfigurationFailure,
 			Message:    fmt.Sprintf("Failure while decoding the configuration retrived from endpoint %v.", configurationURI),
@@ -57,5 +63,18 @@ func (httpProv *httpConfigurationProvider) getConfiguration(r *http.Request, iss
 	}
 
 	return config, nil
+}
 
+func jsonDecodeResponse(r io.Reader, v interface{}) error {
+	return json.NewDecoder(r).Decode(v)
+}
+
+type jsonConfigurationDecoder struct {
+}
+
+func (d *jsonConfigurationDecoder) decode(r io.Reader) (configuration, error) {
+	var config configuration
+	err := jsonDecodeResponse(r, &config)
+
+	return config, err
 }

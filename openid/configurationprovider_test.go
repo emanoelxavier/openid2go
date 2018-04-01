@@ -4,9 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/mock"
 )
 
 type testBody struct {
@@ -15,100 +20,90 @@ type testBody struct {
 
 func (testBody) Close() error { return nil }
 
-func Test_getConfiguration_UsesCorrectUrlAndRequest(t *testing.T) {
-	c := NewHTTPClientMock(t)
-	configurationProvider := httpConfigurationProvider{getConfig: c.httpGet}
+func TestConfigurationProvider_Get_UsesCorrectUrlAndRequest(t *testing.T) {
+	httpGetter := &mockHttpGetter{}
+	configurationProvider := httpConfigurationProvider{getter: httpGetter}
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	issuer := "https://test"
 	configSuffix := "/.well-known/openid-configuration"
-	go func() {
-		c.assertHTTPGet(req, issuer+configSuffix, nil, errors.New("Read configuration error"))
-		c.close()
-	}()
+	httpGetter.On("get", req, issuer+configSuffix).Return(nil, errors.New("Read configuration error"))
 
-	_, e := configurationProvider.getConfiguration(req, issuer)
+	_, e := configurationProvider.get(req, issuer)
 
 	if e == nil {
 		t.Error("An error was expected but not returned")
 	}
 
-	c.assertDone()
+	httpGetter.AssertExpectations(t)
 }
 
-func Test_getConfiguration_WhenGetReturnsError(t *testing.T) {
-	c := NewHTTPClientMock(t)
-	configurationProvider := httpConfigurationProvider{getConfig: c.httpGet}
+func TestConfigurationProvider_Get_WhenGetReturnsError(t *testing.T) {
+	httpGetter := &mockHttpGetter{}
+	configurationProvider := httpConfigurationProvider{getter: httpGetter}
 
 	readError := errors.New("Read configuration error")
-	go func() {
-		c.assertHTTPGet(nil, anything, nil, readError)
-		c.close()
-	}()
+	httpGetter.On("get", (*http.Request)(nil), mock.Anything).Return(nil, readError)
 
-	_, e := configurationProvider.getConfiguration(nil, "issuer")
+	_, e := configurationProvider.get(nil, "issuer")
 
 	expectValidationError(t, e, ValidationErrorGetOpenIdConfigurationFailure, http.StatusUnauthorized, readError)
 
-	c.assertDone()
+	httpGetter.AssertExpectations(t)
 }
 
-func Test_getConfiguration_WhenGetSucceeds(t *testing.T) {
-	c := NewHTTPClientMock(t)
-	configurationProvider := httpConfigurationProvider{c.httpGet, c.decodeResponse}
+func TestConfigurationProvider_Get_WhenGetSucceeds(t *testing.T) {
+	httpGetter := &mockHttpGetter{}
+	configDecoder := &mockConfigurationDecoder{}
+	configurationProvider := httpConfigurationProvider{httpGetter, configDecoder}
 
 	respBody := "openid configuration"
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
 
-	go func() {
-		c.assertHTTPGet(nil, anything, resp, nil)
-		c.assertDecodeResponse(respBody, nil, nil)
-		c.close()
-	}()
+	httpGetter.On("get", (*http.Request)(nil), mock.Anything).Return(resp, nil)
+	configDecoder.On("decode", mock.MatchedBy(ioReaderMatcher(t, respBody))).Return(configuration{}, nil)
 
-	_, e := configurationProvider.getConfiguration(nil, anything)
+	_, e := configurationProvider.get(nil, mock.Anything)
 
 	if e != nil {
 		t.Error("An error was returned but not expected", e)
 	}
 
-	c.assertDone()
+	httpGetter.AssertExpectations(t)
+	configDecoder.AssertExpectations(t)
 }
 
-func Test_getConfiguration_WhenDecodeResponseReturnsError(t *testing.T) {
-	c := NewHTTPClientMock(t)
-	configurationProvider := httpConfigurationProvider{c.httpGet, c.decodeResponse}
+func TestConfigurationProvider_Get_WhenDecodeResponseReturnsError(t *testing.T) {
+	httpGetter := &mockHttpGetter{}
+	configDecoder := &mockConfigurationDecoder{}
+
+	configurationProvider := httpConfigurationProvider{httpGetter, configDecoder}
 	decodeError := errors.New("Decode configuration error")
 	respBody := "openid configuration"
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
+	httpGetter.On("get", (*http.Request)(nil), mock.Anything).Return(resp, nil)
 
-	go func() {
-		c.assertHTTPGet(nil, anything, resp, nil)
-		c.assertDecodeResponse(anything, nil, decodeError)
-		c.close()
-	}()
-
-	_, e := configurationProvider.getConfiguration(nil, anything)
+	configDecoder.On("decode", mock.MatchedBy(ioReaderMatcher(t, respBody))).Return(configuration{}, decodeError)
+	_, e := configurationProvider.get(nil, mock.Anything)
 
 	expectValidationError(t, e, ValidationErrorDecodeOpenIdConfigurationFailure, http.StatusUnauthorized, decodeError)
 
-	c.assertDone()
+	httpGetter.AssertExpectations(t)
+	configDecoder.AssertExpectations(t)
 }
 
-func Test_getConfiguration_WhenDecodeResponseSucceeds(t *testing.T) {
-	c := NewHTTPClientMock(t)
-	configurationProvider := httpConfigurationProvider{c.httpGet, c.decodeResponse}
-	config := &configuration{"testissuer", "https://testissuer/jwk"}
+func TestConfigurationProvider_Get_WhenDecodeResponseSucceeds(t *testing.T) {
+	httpGetter := &mockHttpGetter{}
+	configDecoder := &mockConfigurationDecoder{}
+
+	configurationProvider := httpConfigurationProvider{httpGetter, configDecoder}
+	config := configuration{"testissuer", "https://testissuer/jwk"}
 	respBody := "openid configuration"
 	resp := &http.Response{Body: testBody{bytes.NewBufferString(respBody)}}
+	httpGetter.On("get", (*http.Request)(nil), mock.Anything).Return(resp, nil)
+	configDecoder.On("decode", mock.MatchedBy(ioReaderMatcher(t, respBody))).Return(config, nil)
 
-	go func() {
-		c.assertHTTPGet(nil, anything, resp, nil)
-		c.assertDecodeResponse(anything, config, nil)
-		c.close()
-	}()
-
-	rc, e := configurationProvider.getConfiguration(nil, anything)
+	rc, e := configurationProvider.get(nil, mock.Anything)
 
 	if e != nil {
 		t.Error("An error was returned but not expected", e)
@@ -122,7 +117,7 @@ func Test_getConfiguration_WhenDecodeResponseSucceeds(t *testing.T) {
 		t.Error("Expected jwks uri", config.JwksURI, "but was", rc.JwksURI)
 	}
 
-	c.assertDone()
+	httpGetter.AssertExpectations(t)
 }
 
 func expectValidationError(t *testing.T, e error, vec ValidationErrorCode, status int, inner error) {
@@ -142,5 +137,15 @@ func expectValidationError(t *testing.T, e error, vec ValidationErrorCode, statu
 		}
 	} else {
 		t.Errorf("Expected error type '*ValidationError' but was %T", e)
+	}
+}
+
+func ioReaderMatcher(t *testing.T, expectedContent string) func(r io.Reader) bool {
+	return func(r io.Reader) bool {
+		b, e := ioutil.ReadAll(r)
+
+		assert.Nil(t, e, "error reading the content provided to decode")
+		res := string(b) == expectedContent
+		return res
 	}
 }

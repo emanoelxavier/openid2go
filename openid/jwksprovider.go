@@ -2,28 +2,33 @@ package openid
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 
 	jose "gopkg.in/square/go-jose.v2"
 )
 
 type jwksGetter interface {
-	getJwkSet(r *http.Request, url string) (jose.JSONWebKeySet, error)
+	get(r *http.Request, url string) (jose.JSONWebKeySet, error)
+}
+
+type jwksDecoder interface {
+	decode(io.Reader) (jose.JSONWebKeySet, error)
 }
 
 type httpJwksProvider struct {
-	getJwks    HTTPGetFunc
-	decodeJwks decodeResponseFunc
+	getter  httpGetter
+	decoder jwksDecoder
 }
 
-func newHTTPJwksProvider(gf HTTPGetFunc, df decodeResponseFunc) *httpJwksProvider {
-	return &httpJwksProvider{gf, df}
+func newHTTPJwksProvider(gf HTTPGetFunc, d jwksDecoder) *httpJwksProvider {
+	return &httpJwksProvider{gf, d}
 }
 
-func (httpProv *httpJwksProvider) getJwkSet(r *http.Request, url string) (jose.JSONWebKeySet, error) {
+func (httpProv *httpJwksProvider) get(r *http.Request, url string) (jose.JSONWebKeySet, error) {
 
 	var jwks jose.JSONWebKeySet
-	resp, err := httpProv.getJwks(r, url)
+	resp, err := httpProv.getter.get(r, url)
 
 	if err != nil {
 		return jwks, &ValidationError{
@@ -36,7 +41,7 @@ func (httpProv *httpJwksProvider) getJwkSet(r *http.Request, url string) (jose.J
 
 	defer resp.Body.Close()
 
-	if err := httpProv.decodeJwks(resp.Body, &jwks); err != nil {
+	if jwks, err = httpProv.decoder.decode(resp.Body); err != nil {
 		return jwks, &ValidationError{
 			Code:       ValidationErrorDecodeJwksFailure,
 			Message:    fmt.Sprintf("Failure while decoding the jwk retrieved from the  endpoint %v.", url),
@@ -46,4 +51,14 @@ func (httpProv *httpJwksProvider) getJwkSet(r *http.Request, url string) (jose.J
 	}
 
 	return jwks, nil
+}
+
+type jsonJwksDecoder struct {
+}
+
+func (d *jsonJwksDecoder) decode(r io.Reader) (jose.JSONWebKeySet, error) {
+	var jwks jose.JSONWebKeySet
+	err := jsonDecodeResponse(r, &jwks)
+
+	return jwks, err
 }
