@@ -26,7 +26,7 @@ func (s *signingKeyProvider) flushCachedSigningKeys(issuer string) error {
 }
 
 func (s *signingKeyProvider) refreshSigningKeys(r *http.Request, issuer string) error {
-	skeys, err := s.keySetGetter.getSigningKeySet(r, issuer)
+	skeys, err := s.keySetGetter.get(r, issuer)
 
 	if err != nil {
 		return err

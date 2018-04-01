@@ -240,3 +240,30 @@ func (_m *mockJwksDecoder) decode(_a0 io.Reader) (jose.JSONWebKeySet, error) {
 
 	return r0, r1
 }
+
+type mockPemEncoder struct {
+	mock.Mock
+}
+
+// encode provides a mock function with given fields: key
+func (_m *mockPemEncoder) encode(key interface{}) ([]byte, error) {
+	ret := _m.Called(key)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(interface{}) []byte); ok {
+		r0 = rf(key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(interface{}) error); ok {
+		r1 = rf(key)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}

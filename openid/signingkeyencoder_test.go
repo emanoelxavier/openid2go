@@ -9,8 +9,9 @@ import (
 	"testing"
 )
 
-func Test_pemEncodePublicKey_UsingNilKey_ReturnsMarshallingKeyError(t *testing.T) {
-	_, err := pemEncodePublicKey(nil)
+func TestPemPublicKeyEncoder_Encode_ReturnsMarshallingKeyError(t *testing.T) {
+	e := &pemPublicKeyEncoder{}
+	_, err := e.encode(nil)
 
 	if err == nil {
 		t.Fatal("An error was expected but not returned.")
@@ -20,10 +21,11 @@ func Test_pemEncodePublicKey_UsingNilKey_ReturnsMarshallingKeyError(t *testing.T
 
 }
 
-func Test_pemEncodePublicKey_UsingRSAPublicKey(t *testing.T) {
+func TestPemPublicKeyEncoder_Encode_UsingRSAPublicKey(t *testing.T) {
 	rsaKey := &rsa.PublicKey{N: big.NewInt(9871234), E: 15}
 
-	ek, err := pemEncodePublicKey(rsaKey)
+	e := &pemPublicKeyEncoder{}
+	ek, err := e.encode(rsaKey)
 
 	if err != nil {
 		t.Error("An error was not expected but returned.")

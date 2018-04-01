@@ -6,13 +6,13 @@ import (
 )
 
 type signingKeySetGetter interface {
-	getSigningKeySet(r *http.Request, issuer string) ([]signingKey, error)
+	get(r *http.Request, issuer string) ([]signingKey, error)
 }
 
 type signingKeySetProvider struct {
 	configGetter configurationGetter
 	jwksGetter   jwksGetter
-	keyEncoder   pemEncodeFunc
+	keyEncoder   pemEncoder
 }
 
 type signingKey struct {
@@ -20,11 +20,11 @@ type signingKey struct {
 	key   []byte
 }
 
-func newSigningKeySetProvider(cg configurationGetter, jg jwksGetter, ke pemEncodeFunc) *signingKeySetProvider {
+func newSigningKeySetProvider(cg configurationGetter, jg jwksGetter, ke pemEncoder) *signingKeySetProvider {
 	return &signingKeySetProvider{cg, jg, ke}
 }
 
-func (signProv *signingKeySetProvider) getSigningKeySet(r *http.Request, iss string) ([]signingKey, error) {
+func (signProv *signingKeySetProvider) get(r *http.Request, iss string) ([]signingKey, error) {
 	conf, err := signProv.configGetter.get(r, iss)
 
 	if err != nil {
@@ -48,7 +48,7 @@ func (signProv *signingKeySetProvider) getSigningKeySet(r *http.Request, iss str
 	sk := make([]signingKey, len(jwks.Keys))
 
 	for i, k := range jwks.Keys {
-		ek, err := signProv.keyEncoder(k.Key)
+		ek, err := signProv.keyEncoder.encode(k.Key)
 		if err != nil {
 			return nil, err
 		}
