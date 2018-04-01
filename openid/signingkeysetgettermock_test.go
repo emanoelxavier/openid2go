@@ -23,7 +23,7 @@ type getSigningKeySetResponse struct {
 	err  error
 }
 
-func (c *signingKeySetGetterMock) getSigningKeySet(r *http.Request, iss string) ([]signingKey, error) {
+func (c *signingKeySetGetterMock) get(r *http.Request, iss string) ([]signingKey, error) {
 	c.Calls <- &getSigningKeySetCall{iss}
 	sr := (<-c.Calls).(*getSigningKeySetResponse)
 	return sr.keys, sr.err

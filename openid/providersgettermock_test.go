@@ -2,6 +2,10 @@ package openid
 
 import "testing"
 
+type Call interface{}
+
+const anything = "anything"
+
 type providersGetterMock struct {
 	t     *testing.T
 	Calls chan Call
