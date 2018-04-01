@@ -30,7 +30,7 @@ func (p jwtParserFunc) parse(token string, keyFunc jwt.Keyfunc) (*jwt.Token, err
 type pemToRSAPublicKeyParserFunc func(key []byte) (*rsa.PublicKey, error)
 
 type idTokenValidator struct {
-	provGetter GetProvidersFunc
+	provGetter providersGetter
 	jwtParser  jwtParser
 	keyGetter  signingKeyGetter
 	rsaParser  pemToRSAPublicKeyParserFunc
@@ -84,7 +84,7 @@ func (tv *idTokenValidator) renewAndGetSigningKey(r *http.Request, jt *jwt.Token
 }
 
 func (tv *idTokenValidator) getSigningKey(r *http.Request, jt *jwt.Token) (interface{}, error) {
-	provs, err := tv.provGetter()
+	provs, err := tv.provGetter.get()
 	if err != nil {
 		return nil, err
 	}

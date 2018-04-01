@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+type Call interface{}
+
+const anything = "anything"
+
 type rsaParserMock struct {
 	t     *testing.T
 	Calls chan Call
