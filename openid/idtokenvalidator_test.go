@@ -451,16 +451,13 @@ func Test_validate_WhenParserReturnsErrorFirstTime(t *testing.T) {
 	je := &jwt.ValidationError{Errors: jwt.ValidationErrorNotValidYet}
 	ee := &ValidationError{Code: ValidationErrorJwtValidationFailure, HTTPStatus: http.StatusUnauthorized}
 
-	go func() {
-		jm.assertParse(anything, nil, je)
-		jm.close()
-	}()
+	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(nil, je)
 
-	_, err := tv.validate(nil, anything)
+	_, err := tv.validate(nil, mock.Anything)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
 
-	jm.assertDone()
+	jm.AssertExpectations(t)
 }
 
 func Test_validate_WhenParserSuceedsFirstTime(t *testing.T) {
@@ -468,12 +465,9 @@ func Test_validate_WhenParserSuceedsFirstTime(t *testing.T) {
 
 	jt := &jwt.Token{}
 
-	go func() {
-		jm.assertParse(anything, jt, nil)
-		jm.close()
-	}()
+	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(jt, nil)
 
-	rjt, err := tv.validate(nil, anything)
+	rjt, err := tv.validate(nil, mock.Anything)
 
 	if err != nil {
 		t.Error("Unexpected error was returned.", err)
@@ -483,7 +477,7 @@ func Test_validate_WhenParserSuceedsFirstTime(t *testing.T) {
 		t.Errorf("Expected %+v, but got %+v.", jt, rjt)
 	}
 
-	jm.assertDone()
+	jm.AssertExpectations(t)
 }
 
 func Test_validate_WhenParserReturnsErrorSecondTime(t *testing.T) {
@@ -493,17 +487,14 @@ func Test_validate_WhenParserReturnsErrorSecondTime(t *testing.T) {
 	je := &jwt.ValidationError{Errors: jwt.ValidationErrorMalformed}
 	ee := &ValidationError{Code: ValidationErrorJwtValidationFailure, HTTPStatus: http.StatusBadRequest}
 
-	go func() {
-		jm.assertParse(anything, nil, jfe)
-		jm.assertParse(anything, nil, je)
-		jm.close()
-	}()
+	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(nil, jfe).Once()
+	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(nil, je).Once()
 
-	_, err := tv.validate(nil, anything)
+	_, err := tv.validate(nil, mock.Anything)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
 
-	jm.assertDone()
+	jm.AssertExpectations(t)
 }
 
 func Test_validate_WhenParserReturnsSignatureInvalidErrorSecondTime(t *testing.T) {
@@ -512,17 +503,14 @@ func Test_validate_WhenParserReturnsSignatureInvalidErrorSecondTime(t *testing.T
 	je := &jwt.ValidationError{Errors: jwt.ValidationErrorSignatureInvalid}
 	ee := &ValidationError{Code: ValidationErrorJwtValidationFailure, HTTPStatus: http.StatusUnauthorized}
 
-	go func() {
-		jm.assertParse(anything, nil, je)
-		jm.assertParse(anything, nil, je)
-		jm.close()
-	}()
+	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(nil, je).Once()
+	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(nil, je).Once()
 
 	_, err := tv.validate(nil, anything)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
 
-	jm.assertDone()
+	jm.AssertExpectations(t)
 }
 
 func Test_validate_WhenParserSuceedsSecondTime(t *testing.T) {
@@ -532,11 +520,8 @@ func Test_validate_WhenParserSuceedsSecondTime(t *testing.T) {
 
 	jt := &jwt.Token{}
 
-	go func() {
-		jm.assertParse(anything, jt, jfe)
-		jm.assertParse(anything, jt, nil)
-		jm.close()
-	}()
+	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(jt, jfe).Once()
+	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(jt, nil).Once()
 
 	rjt, err := tv.validate(nil, anything)
 
@@ -548,7 +533,7 @@ func Test_validate_WhenParserSuceedsSecondTime(t *testing.T) {
 		t.Errorf("Expected %+v, but got %+v.", jt, rjt)
 	}
 
-	jm.assertDone()
+	jm.AssertExpectations(t)
 }
 
 func expectSigningKey(t *testing.T, rsk interface{}, jt *jwt.Token, esk *rsa.PublicKey) {
@@ -566,10 +551,10 @@ func expectSigningKey(t *testing.T, rsk interface{}, jt *jwt.Token, esk *rsa.Pub
 	}
 }
 
-func createIDTokenValidator(t *testing.T) (*providersGetterMock, *jwtParserMock, *mockSigningKeyGetter, *rsaParserMock, *idTokenValidator) {
+func createIDTokenValidator(t *testing.T) (*providersGetterMock, *mockJwtParser, *mockSigningKeyGetter, *rsaParserMock, *idTokenValidator) {
 	pm := newProvidersGetterMock(t)
-	jm := newJwtParserMock(t)
+	jm := &mockJwtParser{}
 	sm := &mockSigningKeyGetter{}
 	kp := newRSAParserMock(t)
-	return pm, jm, sm, kp, &idTokenValidator{pm.getProviders, jm.parse, sm, kp.parse}
+	return pm, jm, sm, kp, &idTokenValidator{pm.getProviders, jm, sm, kp.parse}
 }
