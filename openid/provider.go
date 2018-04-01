@@ -14,6 +14,21 @@ type Provider struct {
 	ClientIDs []string
 }
 
+// The GetProvidersFunc defines the function type used to retrieve the collection of allowed OP(s) along with the
+// respective client IDs registered with those providers that can access the backend service
+// using this package.
+// A function of this type must be provided to NewConfiguration through the option ProvidersGetter.
+// The given function will then be invoked for every request intercepted by the Authenticate or AuthenticateUser middleware.
+type GetProvidersFunc func() ([]Provider, error)
+
+type providersGetter interface {
+	get() ([]Provider, error)
+}
+
+func (f GetProvidersFunc) get() ([]Provider, error) {
+	return f()
+}
+
 // providers represent a collection of OPs.
 type providers []Provider
 
@@ -27,13 +42,6 @@ func NewProvider(issuer string, clientIDs []string) (Provider, error) {
 
 	return p, nil
 }
-
-// The GetProvidersFunc defines the function type used to retrieve the collection of allowed OP(s) along with the
-// respective client IDs registered with those providers that can access the backend service
-// using this package.
-// A function of this type must be provided to NewConfiguration through the option ProvidersGetter.
-// The given function will then be invoked for every request intercepted by the Authenticate or AuthenticateUser middleware.
-type GetProvidersFunc func() ([]Provider, error)
 
 func (ps providers) validate() error {
 	if len(ps) == 0 {
