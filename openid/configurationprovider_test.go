@@ -21,7 +21,7 @@ type testBody struct {
 func (testBody) Close() error { return nil }
 
 func TestConfigurationProvider_Get_UsesCorrectUrlAndRequest(t *testing.T) {
-	httpGetter := &mockHttpGetter{}
+	httpGetter := &mockHTTPGetter{}
 	configurationProvider := httpConfigurationProvider{getter: httpGetter}
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
@@ -39,7 +39,7 @@ func TestConfigurationProvider_Get_UsesCorrectUrlAndRequest(t *testing.T) {
 }
 
 func TestConfigurationProvider_Get_WhenGetReturnsError(t *testing.T) {
-	httpGetter := &mockHttpGetter{}
+	httpGetter := &mockHTTPGetter{}
 	configurationProvider := httpConfigurationProvider{getter: httpGetter}
 
 	readError := errors.New("Read configuration error")
@@ -53,7 +53,7 @@ func TestConfigurationProvider_Get_WhenGetReturnsError(t *testing.T) {
 }
 
 func TestConfigurationProvider_Get_WhenGetSucceeds(t *testing.T) {
-	httpGetter := &mockHttpGetter{}
+	httpGetter := &mockHTTPGetter{}
 	configDecoder := &mockConfigurationDecoder{}
 	configurationProvider := httpConfigurationProvider{httpGetter, configDecoder}
 
@@ -74,7 +74,7 @@ func TestConfigurationProvider_Get_WhenGetSucceeds(t *testing.T) {
 }
 
 func TestConfigurationProvider_Get_WhenDecodeResponseReturnsError(t *testing.T) {
-	httpGetter := &mockHttpGetter{}
+	httpGetter := &mockHTTPGetter{}
 	configDecoder := &mockConfigurationDecoder{}
 
 	configurationProvider := httpConfigurationProvider{httpGetter, configDecoder}
@@ -93,7 +93,7 @@ func TestConfigurationProvider_Get_WhenDecodeResponseReturnsError(t *testing.T) 
 }
 
 func TestConfigurationProvider_Get_WhenDecodeResponseSucceeds(t *testing.T) {
-	httpGetter := &mockHttpGetter{}
+	httpGetter := &mockHTTPGetter{}
 	configDecoder := &mockConfigurationDecoder{}
 
 	configurationProvider := httpConfigurationProvider{httpGetter, configDecoder}

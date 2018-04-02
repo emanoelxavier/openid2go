@@ -12,7 +12,7 @@ import (
 )
 
 func TestJwksProvider_Get_UsesCorrectUrl(t *testing.T) {
-	httpGetter := &mockHttpGetter{}
+	httpGetter := &mockHTTPGetter{}
 	jwksProvider := httpJwksProvider{getter: httpGetter}
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
@@ -30,7 +30,7 @@ func TestJwksProvider_Get_UsesCorrectUrl(t *testing.T) {
 }
 
 func TestJwksProvider_Get_WhenGetReturnsError(t *testing.T) {
-	httpGetter := &mockHttpGetter{}
+	httpGetter := &mockHTTPGetter{}
 	jwksProvider := httpJwksProvider{getter: httpGetter}
 
 	readError := errors.New("Read jwks error")
@@ -44,7 +44,7 @@ func TestJwksProvider_Get_WhenGetReturnsError(t *testing.T) {
 }
 
 func TestJwksProvider_Get_WhenGetSucceeds(t *testing.T) {
-	httpGetter := &mockHttpGetter{}
+	httpGetter := &mockHTTPGetter{}
 	jwksDecoder := &mockJwksDecoder{}
 	jwksProvider := httpJwksProvider{httpGetter, jwksDecoder}
 
@@ -64,7 +64,7 @@ func TestJwksProvider_Get_WhenGetSucceeds(t *testing.T) {
 }
 
 func TestJwksProvider_Get_WhenDecodeResponseReturnsError(t *testing.T) {
-	httpGetter := &mockHttpGetter{}
+	httpGetter := &mockHTTPGetter{}
 	jwksDecoder := &mockJwksDecoder{}
 
 	jwksProvider := httpJwksProvider{httpGetter, jwksDecoder}
@@ -83,7 +83,7 @@ func TestJwksProvider_Get_WhenDecodeResponseReturnsError(t *testing.T) {
 }
 
 func TestJwksProvider_Get_WhenDecodeResponseSucceeds(t *testing.T) {
-	httpGetter := &mockHttpGetter{}
+	httpGetter := &mockHTTPGetter{}
 	jwksDecoder := &mockJwksDecoder{}
 
 	jwksProvider := httpJwksProvider{httpGetter, jwksDecoder}
