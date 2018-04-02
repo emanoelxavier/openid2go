@@ -22,18 +22,15 @@ func Test_getSigningKey_WhenKeyIsNotCached_WhenProviderReturnsKey(t *testing.T) 
 	iss := "issuer"
 	kid := "kid1"
 	key := "signingKey"
+	keyGetter.On("get", (*http.Request)(nil), iss).Return([]signingKey{{keyID: kid, key: []byte(key)}}, nil)
 
-	go func() {
-		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
-		keyGetter.close()
-	}()
-
+	// rk, re := keyCache.getSigningKey(nil, iss, kid)
 	expectKey(t, keyCache, iss, kid, key)
 
 	// Validate that the key is cached
 	expectCachedKid(t, keyCache, iss, kid, key)
 
-	keyGetter.assertDone()
+	keyGetter.AssertExpectations(t)
 }
 
 func Test_getSigningKey_WhenProviderReturnsError(t *testing.T) {
@@ -43,10 +40,7 @@ func Test_getSigningKey_WhenProviderReturnsError(t *testing.T) {
 	kid := "kid1"
 	ee := &ValidationError{Code: ValidationErrorGetJwksFailure, HTTPStatus: http.StatusUnauthorized}
 
-	go func() {
-		keyGetter.assertGetSigningKeySet(iss, nil, ee)
-		keyGetter.close()
-	}()
+	keyGetter.On("get", (*http.Request)(nil), iss).Return(nil, ee)
 
 	rk, re := keyCache.getSigningKey(nil, iss, kid)
 
@@ -61,7 +55,7 @@ func Test_getSigningKey_WhenProviderReturnsError(t *testing.T) {
 		t.Fatal("There shouldnt be cached keys for the targeted issuer.")
 	}
 
-	keyGetter.assertDone()
+	keyGetter.AssertExpectations(t)
 }
 
 func Test_getSigningKey_WhenKeyIsNotFound(t *testing.T) {
@@ -72,10 +66,7 @@ func Test_getSigningKey_WhenKeyIsNotFound(t *testing.T) {
 	tkid := "kid2"
 	key := "signingKey"
 
-	go func() {
-		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
-		keyGetter.close()
-	}()
+	keyGetter.On("get", (*http.Request)(nil), iss).Return([]signingKey{{keyID: kid, key: []byte(key)}}, nil)
 
 	rk, re := keyCache.getSigningKey(nil, iss, tkid)
 
@@ -87,7 +78,7 @@ func Test_getSigningKey_WhenKeyIsNotFound(t *testing.T) {
 
 	expectCachedKid(t, keyCache, iss, kid, key)
 
-	keyGetter.assertDone()
+	keyGetter.AssertExpectations(t)
 }
 
 func Test_flushCachedSigningKeys_FlushedKeysAreDeleted(t *testing.T) {
@@ -118,12 +109,7 @@ func Test_flushCachedSigningKey_RetrieveFlushedKey(t *testing.T) {
 	kid := "kid1"
 	key := "signingKey"
 
-	go func() {
-		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
-		keyGetter.assertGetSigningKeySet(iss, []signingKey{{keyID: kid, key: []byte(key)}}, nil)
-
-		keyGetter.close()
-	}()
+	keyGetter.On("get", (*http.Request)(nil), iss).Return([]signingKey{{keyID: kid, key: []byte(key)}}, nil).Twice()
 
 	// Get the signing key not yet cached will cache it.
 	expectKey(t, keyCache, iss, kid, key)
@@ -138,7 +124,7 @@ func Test_flushCachedSigningKey_RetrieveFlushedKey(t *testing.T) {
 	// Validate that the key is cached
 	expectCachedKid(t, keyCache, iss, kid, key)
 
-	keyGetter.assertDone()
+	keyGetter.AssertExpectations(t)
 }
 
 func expectCachedKid(t *testing.T, keyProv *signingKeyProvider, iss string, kid string, key string) {
@@ -166,7 +152,6 @@ func expectCachedKid(t *testing.T, keyProv *signingKeyProvider, iss string, kid 
 }
 
 func expectKey(t *testing.T, c signingKeyGetter, iss string, kid string, key string) {
-
 	sk, re := c.getSigningKey(nil, iss, kid)
 
 	if re != nil {
@@ -184,7 +169,7 @@ func expectKey(t *testing.T, c signingKeyGetter, iss string, kid string, key str
 	}
 }
 
-func createSigningKeyProvider(t *testing.T) (*signingKeySetGetterMock, *signingKeyProvider) {
-	mock := newSigningKeySetGetterMock(t)
+func createSigningKeyProvider(t *testing.T) (*mockSigningKeySetGetter, *signingKeyProvider) {
+	mock := &mockSigningKeySetGetter{}
 	return mock, newSigningKeyProvider(mock)
 }

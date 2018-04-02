@@ -457,7 +457,7 @@ func Test_validate_WhenParserReturnsSignatureInvalidErrorSecondTime(t *testing.T
 	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(nil, je).Once()
 	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(nil, je).Once()
 
-	_, err := tv.validate(nil, anything)
+	_, err := tv.validate(nil, mock.Anything)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
 
@@ -474,8 +474,7 @@ func Test_validate_WhenParserSuceedsSecondTime(t *testing.T) {
 	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(jt, jfe).Once()
 	jm.On("parse", mock.Anything, mock.AnythingOfType("jwt.Keyfunc")).Return(jt, nil).Once()
 
-	rjt, err := tv.validate(nil, anything)
-
+	rjt, err := tv.validate(nil, mock.Anything)
 	if err != nil {
 		t.Error("Unexpected error was returned.", err)
 	}
