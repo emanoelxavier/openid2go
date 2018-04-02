@@ -2,6 +2,7 @@ Go OpenId
 ===========
 [![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/emanoelxavier/openid2go/openid)
 [![license](http://img.shields.io/badge/license-MIT-yellowgreen.svg?style=flat)](https://raw.githubusercontent.com/emanoelxavier/openid2go/master/openid/LICENSE)
+
 ## Summary
 
 A Go package that implements web service middlewares for authenticating identities represented by OpenID Connect (OIDC) ID Tokens.
@@ -32,7 +33,7 @@ func AuthenticatedHandlerWithUser(u *openid.User, w http.ResponseWriter, r *http
 }
 
 func Example() {
-	configuration, err := openid.NewConfiguration(openid.ProvidersGetter(getProviders_googlePlayground))
+	configuration, err := openid.NewConfiguration(openid.ProvidersGetter(myGetProviders))
 
 	if err != nil {
 		panic(err)
@@ -55,6 +56,11 @@ func myGetProviders() ([]openid.Provider, error) {
 }
 ```
 This example is also available in the documentation of this package, for more details see [GoDoc](https://godoc.org/github.com/emanoelxavier/openid2go/openid).
+
+Additional examples:
+* [Alice Example](../alice-example)
+* [Gorilla Example](../gorilla-example)
+
 
 ## Tests
 
