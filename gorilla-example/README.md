@@ -3,7 +3,7 @@ Go OpenId - Gorilla Example
 [![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/emanoelxavier/openid2go/openid)
 [![license](http://img.shields.io/badge/license-MIT-yellowgreen.svg?style=flat)](https://raw.githubusercontent.com/emanoelxavier/openid2go/master/gorilla-example/LICENSE)
 
-This fully working example implements an HTTP server using openid Authentication middlewares and [Gorilla Context](http://www.gorillatoolkit.org/pkg/context) to preserve the user information accross the service application stack.
+This fully working example implements an HTTP server using openid Authentication middlewares and [Gorilla Context](http://www.gorillatoolkit.org/pkg/context) to preserve the user information across the service application stack.
 
 
 The AuthenticateUser middleware exported by the package openid2go/openid forwards the user information to a handler that implements the interface openid.UserHandler:
