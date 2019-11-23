@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/emanoelxavier/openid2go/openid"
+	"github.com/TykTechnologies/openid2go/openid"
 	"github.com/gorilla/context"
 )
 

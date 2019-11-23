@@ -20,17 +20,17 @@ type getJwksCall struct {
 }
 
 type getJwksResponse struct {
-	jwks jose.JsonWebKeySet
+	jwks jose.JSONWebKeySet
 	err  error
 }
 
-func (c *jwksGetterMock) getJwkSet(url string) (jose.JsonWebKeySet, error) {
+func (c *jwksGetterMock) getJwkSet(url string) (jose.JSONWebKeySet, error) {
 	c.Calls <- &getJwksCall{url}
 	gr := (<-c.Calls).(*getJwksResponse)
 	return gr.jwks, gr.err
 }
 
-func (c *jwksGetterMock) assertGetJwks(url string, jwks jose.JsonWebKeySet, err error) {
+func (c *jwksGetterMock) assertGetJwks(url string, jwks jose.JSONWebKeySet, err error) {
 	call := (<-c.Calls).(*getJwksCall)
 	if url != anything && call.url != url {
 		c.t.Error("Expected getJwks with", url, "but was", call.url)

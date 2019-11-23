@@ -12,7 +12,7 @@ const audiencesClaimName = "aud"
 const subjectClaimName = "sub"
 const keyIDJwtHeaderName = "kid"
 
-type jwtTokenValidator interface {
+type JWTTokenValidator interface {
 	validate(t string) (jt *jwt.Token, err error)
 }
 

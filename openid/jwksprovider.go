@@ -8,7 +8,7 @@ import (
 )
 
 type jwksGetter interface {
-	getJwkSet(string) (jose.JsonWebKeySet, error)
+	getJwkSet(string) (jose.JSONWebKeySet, error)
 }
 
 type httpJwksProvider struct {
@@ -20,9 +20,9 @@ func newHTTPJwksProvider(gf httpGetFunc, df decodeResponseFunc) *httpJwksProvide
 	return &httpJwksProvider{gf, df}
 }
 
-func (httpProv *httpJwksProvider) getJwkSet(url string) (jose.JsonWebKeySet, error) {
+func (httpProv *httpJwksProvider) getJwkSet(url string) (jose.JSONWebKeySet, error) {
 
-	var jwks jose.JsonWebKeySet
+	var jwks jose.JSONWebKeySet
 	resp, err := httpProv.getJwks(url)
 
 	if err != nil {
