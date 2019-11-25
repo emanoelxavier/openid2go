@@ -119,7 +119,7 @@ func authenticate(c *Configuration, rw http.ResponseWriter, req *http.Request) (
 		return nil, eh(err, rw, req)
 	}
 
-	vt, err := c.tokenValidator.validate(ts)
+	vt, err := c.tokenValidator.Validate(ts)
 
 	if err != nil {
 		return nil, eh(err, rw, req)

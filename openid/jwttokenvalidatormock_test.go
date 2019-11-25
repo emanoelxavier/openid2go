@@ -24,7 +24,7 @@ type validateResp struct {
 	err error
 }
 
-func (j *jwtTokenValidatorMock) validate(t string) (*jwt.Token, error) {
+func (j *jwtTokenValidatorMock) Validate(t string) (*jwt.Token, error) {
 	j.Calls <- &validateCall{t}
 	vr := (<-j.Calls).(*validateResp)
 	return vr.jt, vr.err

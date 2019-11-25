@@ -450,7 +450,7 @@ func Test_validate_WhenParserReturnsErrorFirstTime(t *testing.T) {
 		jm.close()
 	}()
 
-	_, err := tv.validate(anything)
+	_, err := tv.Validate(anything)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
 
@@ -467,7 +467,7 @@ func Test_validate_WhenParserSuceedsFirstTime(t *testing.T) {
 		jm.close()
 	}()
 
-	rjt, err := tv.validate(anything)
+	rjt, err := tv.Validate(anything)
 
 	if err != nil {
 		t.Error("Unexpected error was returned.", err)
@@ -493,7 +493,7 @@ func Test_validate_WhenParserReturnsErrorSecondTime(t *testing.T) {
 		jm.close()
 	}()
 
-	_, err := tv.validate(anything)
+	_, err := tv.Validate(anything)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
 
@@ -512,7 +512,7 @@ func Test_validate_WhenParserReturnsSignatureInvalidErrorSecondTime(t *testing.T
 		jm.close()
 	}()
 
-	_, err := tv.validate(anything)
+	_, err := tv.Validate(anything)
 
 	expectValidationError(t, err, ee.Code, ee.HTTPStatus, ee.Err)
 
@@ -532,7 +532,7 @@ func Test_validate_WhenParserSuceedsSecondTime(t *testing.T) {
 		jm.close()
 	}()
 
-	rjt, err := tv.validate(anything)
+	rjt, err := tv.Validate(anything)
 
 	if err != nil {
 		t.Error("Unexpected error was returned.", err)
