@@ -63,9 +63,9 @@ func (c *HTTPClientMock) decodeResponse(reader io.Reader, value interface{}) err
 			v.Issuer = dr.value.(*configuration).Issuer
 			v.JwksUri = dr.value.(*configuration).JwksUri
 		}
-	case *jose.JsonWebKeySet:
+	case *jose.JSONWebKeySet:
 		if dr.value != nil {
-			v.Keys = dr.value.(*jose.JsonWebKeySet).Keys
+			v.Keys = dr.value.(*jose.JSONWebKeySet).Keys
 		}
 
 	default:
