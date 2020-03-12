@@ -104,7 +104,7 @@ func createConfiguration(t *testing.T, eh ErrorHandlerFunc, gt GetIDTokenFunc) (
 	jm := newJwtTokenValidatorMock(t)
 	c, _ := NewConfiguration(ErrorHandler(eh))
 	c.tokenValidator = jm
-	c.idTokenGetter = gt
+	c.IDTokenGetter = gt
 	return jm, c
 }
 
