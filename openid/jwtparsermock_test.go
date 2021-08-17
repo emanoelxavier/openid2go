@@ -3,7 +3,7 @@ package openid
 import (
 	"testing"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type jwtParserMock struct {

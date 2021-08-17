@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/emanoelxavier/openid2go/openid"
+	"github.com/TykTechnologies/openid2go/openid"
 )
 
 const authenticatedMessage string = "Congrats, you are authenticated!"
