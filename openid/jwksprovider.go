@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/square/go-jose"
+	"github.com/go-jose/go-jose/v3"
 )
 
 type jwksGetter interface {
@@ -21,10 +21,8 @@ func newHTTPJwksProvider(gf httpGetFunc, df decodeResponseFunc) *httpJwksProvide
 }
 
 func (httpProv *httpJwksProvider) getJwkSet(url string) (jose.JSONWebKeySet, error) {
-
 	var jwks jose.JSONWebKeySet
 	resp, err := httpProv.getJwks(url)
-
 	if err != nil {
 		return jwks, &ValidationError{Code: ValidationErrorGetJwksFailure, Message: fmt.Sprintf("Failure while contacting the jwk endpoint %v: %v", url, err), Err: err, HTTPStatus: http.StatusUnauthorized}
 	}

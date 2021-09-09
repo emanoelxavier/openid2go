@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/square/go-jose"
+	"github.com/go-jose/go-jose/v3"
 )
 
 func Test_getsigningKeySet_WhenGetConfigurationReturnsError(t *testing.T) {
@@ -39,7 +39,6 @@ func Test_getsigningKeySet_WhenGetJwksReturnsError(t *testing.T) {
 		configGetter.close()
 		jwksGetter.assertGetJwks(anything, jose.JSONWebKeySet{}, ee)
 		jwksGetter.close()
-
 	}()
 
 	sk, re := skProv.getSigningKeySet(anything)
@@ -64,7 +63,6 @@ func Test_getsigningKeySet_WhenJwkSetIsEmpty(t *testing.T) {
 		configGetter.close()
 		jwksGetter.assertGetJwks(anything, jose.JSONWebKeySet{}, nil)
 		jwksGetter.close()
-
 	}()
 
 	sk, re := skProv.getSigningKeySet(anything)
@@ -156,7 +154,6 @@ func Test_getsigningKeySet_WhenKeyEncodingReturnsSuccess(t *testing.T) {
 	configGetter.assertDone()
 	jwksGetter.assertDone()
 	pemEncoder.assertDone()
-
 }
 
 func createSigningKeySetProvider(t *testing.T) (*configurationGetterMock, *jwksGetterMock, *pemEncoderMock, signingKeySetProvider) {

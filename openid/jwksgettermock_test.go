@@ -3,7 +3,7 @@ package openid
 import (
 	"testing"
 
-	"github.com/square/go-jose"
+	"github.com/go-jose/go-jose/v3"
 )
 
 type jwksGetterMock struct {

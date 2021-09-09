@@ -36,7 +36,7 @@ func Test_validateProvider_ValidProvider(t *testing.T) {
 
 func Test_validateProviders_OneInvalidProvider(t *testing.T) {
 	p := Provider{Issuer: "https://test", ClientIDs: []string{"clientID"}}
-	ps := []Provider{p, Provider{}}
+	ps := []Provider{p, {}}
 
 	se := providers(ps).validate()
 	expectSetupError(t, se, SetupErrorInvalidIssuer)
