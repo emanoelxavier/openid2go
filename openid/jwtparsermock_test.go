@@ -25,7 +25,7 @@ type parseResp struct {
 	e  error
 }
 
-func (p *jwtParserMock) parse(t string, kf jwt.Keyfunc) (*jwt.Token, error) {
+func (p *jwtParserMock) parse(t string, kf jwt.Keyfunc, _ ...jwt.ParserOption) (*jwt.Token, error) {
 	p.Calls <- &parseCall{t, kf}
 	pr := (<-p.Calls).(*parseResp)
 	return pr.jt, pr.e

@@ -16,7 +16,7 @@ type JWTTokenValidator interface {
 	Validate(t string) (jt *jwt.Token, err error)
 }
 
-type jwtParserFunc func(string, jwt.Keyfunc) (*jwt.Token, error)
+type jwtParserFunc func(string, jwt.Keyfunc, ...jwt.ParserOption) (*jwt.Token, error)
 
 type idTokenValidator struct {
 	provGetter GetProvidersFunc
